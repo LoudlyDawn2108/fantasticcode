@@ -19,9 +19,11 @@ fantasticcode --continue --prompt "continue the last task"
 fantasticcode --session sess_123 --prompt "resume this session"
 fantasticcode --session sess_123 --fork --prompt "try another approach"
 fantasticcode --agent reviewer --model openai/gpt-4.1 --prompt "review the repo"
+fantasticcode --debug --model openai/gpt-4.1 --prompt "trace this run"
 ```
 
 If `--prompt` is omitted, piped stdin is used. New sessions use `--model provider/model` or the configured default model; continued sessions can reuse the stored provider and model.
+Use `--debug` or `FANTASTICCODE_DEBUG=1` to write `.fantasticcode/debug.ndjson` events.
 
 ## Configuration
 

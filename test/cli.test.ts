@@ -41,4 +41,15 @@ describe("CLI", () => {
     expect(captured).toMatchObject({ continueLast: true, fork: true, prompt: "again" });
     expect(captured).not.toHaveProperty("agent");
   });
+
+  it("passes the debug flag through the run request", async () => {
+    let captured: RunRequest | undefined;
+    const program = buildProgram(async (request) => {
+      captured = request;
+      return 0;
+    });
+    program.exitOverride();
+    await program.parseAsync(["node", "fantasticcode", "--debug", "--prompt", "trace"]);
+    expect(captured).toMatchObject({ debug: true, prompt: "trace" });
+  });
 });

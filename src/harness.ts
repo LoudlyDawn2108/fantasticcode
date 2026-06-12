@@ -15,6 +15,7 @@ export class AgentHarness {
   private readonly settings: HarnessSettings;
 
   async run(request: RunRequest): Promise<RunResult> {
+    const debug = request.debug ?? this.settings.debug;
     const contextInput = {
       request,
       workspaceRoot: request.workspaceRoot ?? this.settings.workspaceRoot,
@@ -22,7 +23,7 @@ export class AgentHarness {
       agentPresets: this.settings.agentPresets ?? [],
       ...(this.settings.defaults === undefined ? {} : { defaults: this.settings.defaults }),
       runner: this.settings.runner ?? { maxToolTurns: 8 },
-      ...(this.settings.debug === undefined ? {} : { debug: this.settings.debug }),
+      ...(debug === undefined ? {} : { debug }),
       ...(this.settings.console === undefined ? {} : { console: this.settings.console }),
     };
     const prepared = await this.preflight.prepare(

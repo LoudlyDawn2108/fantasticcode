@@ -22,6 +22,7 @@ export interface RunRequest {
   sessionId?: string;
   fork?: boolean;
   workspaceRoot?: string;
+  debug?: boolean;
 }
 
 export interface RunResult {

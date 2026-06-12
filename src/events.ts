@@ -2,6 +2,8 @@ import { appendFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { AgentEvent } from "./contracts.js";
 
+export type AgentEventErrorHandler = (error: unknown, event: AgentEvent) => void | Promise<void>;
+
 export type AgentEventHandler = (event: AgentEvent) => void | Promise<void>;
 
 export interface AgentEventSink {
@@ -11,6 +13,8 @@ export interface AgentEventSink {
 export class AgentEventBus {
   private readonly handlers = new Set<AgentEventHandler>();
 
+  constructor(private readonly onHandlerError: AgentEventErrorHandler = defaultEventErrorHandler) {}
+
   subscribe(handler: AgentEventHandler): () => void {
     this.handlers.add(handler);
     return () => this.handlers.delete(handler);
@@ -18,9 +22,18 @@ export class AgentEventBus {
 
   async publish(event: AgentEvent): Promise<void> {
     for (const handler of this.handlers) {
-      await handler(event);
+      try {
+        await handler(event);
+      } catch (error) {
+        await this.onHandlerError(error, event);
+      }
     }
   }
+}
+
+function defaultEventErrorHandler(error: unknown, event: AgentEvent): void {
+  const message = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`event handler failed for ${event.type}: ${message}\n`);
 }
 
 export class ConsoleSink implements AgentEventSink {
