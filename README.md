@@ -40,6 +40,8 @@ built-in defaults
 
 `agent-harness.config.json` is intended for shared provider, model, runner, and agent settings. `agent-harness.local.json` is for private API keys and local overrides.
 
+Copy `agent-harness.config.example.json` to `agent-harness.config.json` in your workspace to start from a working OpenAI provider configuration.
+
 Agents use JSON metadata plus Markdown prompt bodies:
 
 ```json
@@ -83,7 +85,7 @@ Anthropic requests also read `FANTASTICCODE_ANTHROPIC_MAX_TOKENS` when set; othe
 
 ## Tools
 
-Built-in agent tools are `read`, `edit`, `apply_patch`, and `bash`. File tools are sandboxed to the workspace. The `bash` tool runs in the workspace, has a timeout/output cap, and rejects obviously destructive commands.
+Built-in agent tools are `read`, `edit`, `apply_patch`, and `bash`. File tools are sandboxed to the workspace. The `bash` tool runs in the workspace, uses Bash when available, falls back to the platform shell only when Bash cannot be spawned, has a timeout/output cap, and rejects obviously destructive commands.
 
 ## QA
 

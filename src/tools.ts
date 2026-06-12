@@ -6,6 +6,52 @@ import { HarnessError } from "./errors.js";
 const MAX_READ_BYTES = 128 * 1024;
 const MAX_OUTPUT_BYTES = 64 * 1024;
 
+export interface SpawnedCommandProcess {
+  stdout: NodeJS.ReadableStream;
+  stderr: NodeJS.ReadableStream;
+  kill(signal: NodeJS.Signals): boolean;
+  on(event: "error", listener: (error: NodeJS.ErrnoException) => void): this;
+  on(event: "close", listener: (code: number | null) => void): this;
+}
+
+export interface CommandSpawner {
+  spawn(command: string, args: string[], options: CommandSpawnOptions): SpawnedCommandProcess;
+}
+
+export interface CommandSpawnOptions {
+  cwd: string;
+  env: NodeJS.ProcessEnv;
+  stdio: ["ignore", "pipe", "pipe"];
+}
+
+export interface BashToolOptions {
+  spawner?: CommandSpawner;
+  platform?: NodeJS.Platform;
+  comSpec?: string;
+}
+
+interface ShellLauncher {
+  readonly name: string;
+  readonly executable: string;
+  args(command: string): string[];
+}
+
+interface BashResult {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  timedOut: boolean;
+  truncated: boolean;
+}
+
+type ShellAttempt = { kind: "result"; result: BashResult } | { kind: "spawnError"; error: NodeJS.ErrnoException };
+
+const nodeSpawner: CommandSpawner = {
+  spawn(command, args, options) {
+    return spawn(command, args, options);
+  },
+};
+
 export class ReadTool implements ToolCommand {
   readonly name = "read";
   readonly description = "Read a UTF-8 text file from the workspace, optionally by line range.";
@@ -109,7 +155,7 @@ export class ApplyPatchTool implements ToolCommand {
 
 export class BashTool implements ToolCommand {
   readonly name = "bash";
-  readonly description = "Run a bounded bash command in the workspace.";
+  readonly description = "Run a bounded shell command in the workspace, preferring bash when available.";
   readonly schema: JsonSchema = {
     type: "object",
     properties: {
@@ -120,15 +166,17 @@ export class BashTool implements ToolCommand {
     additionalProperties: false,
   };
 
+  constructor(private readonly options: BashToolOptions = {}) {}
+
   async execute(ctx: ToolContext, input: JsonObject): Promise<unknown> {
     const command = getString(input, "command");
     const timeoutMs = getOptionalNumber(input, "timeoutMs") ?? 10000;
-    return runBash(command, ctx.workspace.root, timeoutMs);
+    return runShell(command, ctx.workspace.root, timeoutMs, this.options);
   }
 }
 
-export function createDefaultTools(): ToolCommand[] {
-  return [new ReadTool(), new EditTool(), new ApplyPatchTool(), new BashTool()];
+export function createDefaultTools(options: BashToolOptions = {}): ToolCommand[] {
+  return [new ReadTool(), new EditTool(), new ApplyPatchTool(), new BashTool(options)];
 }
 
 function getString(input: JsonObject, key: string): string {
@@ -213,9 +261,45 @@ function parsePatch(patch: string): PatchOperation[] {
   return operations;
 }
 
-async function runBash(command: string, cwd: string, timeoutMs: number): Promise<unknown> {
+async function runShell(command: string, cwd: string, timeoutMs: number, options: BashToolOptions): Promise<BashResult> {
+  const launchErrors: string[] = [];
+  for (const launcher of shellLaunchers(options.platform ?? process.platform, options.comSpec ?? process.env.ComSpec)) {
+    const attempt = await runShellAttempt(command, cwd, timeoutMs, launcher, options.spawner ?? nodeSpawner);
+    if (attempt.kind === "result") {
+      return attempt.result;
+    }
+    if (!isEnoent(attempt.error)) {
+      return failedToSpawn(attempt.error);
+    }
+    launchErrors.push(`${launcher.executable}: ${attempt.error.message}`);
+  }
+  return { exitCode: 127, stdout: "", stderr: launchErrors.join(EOL), timedOut: false, truncated: false };
+}
+
+function shellLaunchers(platform: NodeJS.Platform, comSpec: string | undefined): ShellLauncher[] {
+  const bash: ShellLauncher = { name: "bash", executable: "bash", args: (command) => ["-lc", command] };
+  if (platform === "win32") {
+    return [
+      bash,
+      {
+        name: "cmd",
+        executable: comSpec === undefined || comSpec.trim() === "" ? "cmd.exe" : comSpec,
+        args: (command) => ["/d", "/s", "/c", command],
+      },
+    ];
+  }
+  return [bash, { name: "sh", executable: "sh", args: (command) => ["-lc", command] }];
+}
+
+async function runShellAttempt(
+  command: string,
+  cwd: string,
+  timeoutMs: number,
+  launcher: ShellLauncher,
+  spawner: CommandSpawner,
+): Promise<ShellAttempt> {
   return new Promise((resolve) => {
-    const child = spawn("bash", ["-lc", command], {
+    const child = spawner.spawn(launcher.executable, launcher.args(command), {
       cwd,
       env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
       stdio: ["ignore", "pipe", "pipe"],
@@ -223,6 +307,7 @@ async function runBash(command: string, cwd: string, timeoutMs: number): Promise
     let stdout: Buffer<ArrayBufferLike> = Buffer.alloc(0);
     let stderr: Buffer<ArrayBufferLike> = Buffer.alloc(0);
     let timedOut = false;
+    let settled = false;
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill("SIGTERM");
@@ -234,20 +319,39 @@ async function runBash(command: string, cwd: string, timeoutMs: number): Promise
       stderr = cappedConcat(stderr, chunk);
     });
     child.on("error", (error) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
       clearTimeout(timer);
-      resolve({ exitCode: 127, stdout: "", stderr: error.message, timedOut: false, truncated: false });
+      resolve({ kind: "spawnError", error });
     });
     child.on("close", (code) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
       clearTimeout(timer);
       resolve({
-        exitCode: code ?? 1,
-        stdout: stdout.toString("utf8"),
-        stderr: stderr.toString("utf8"),
-        timedOut,
-        truncated: stdout.length >= MAX_OUTPUT_BYTES || stderr.length >= MAX_OUTPUT_BYTES,
+        kind: "result",
+        result: {
+          exitCode: code ?? 1,
+          stdout: stdout.toString("utf8"),
+          stderr: stderr.toString("utf8"),
+          timedOut,
+          truncated: stdout.length >= MAX_OUTPUT_BYTES || stderr.length >= MAX_OUTPUT_BYTES,
+        },
       });
     });
   });
+}
+
+function failedToSpawn(error: NodeJS.ErrnoException): BashResult {
+  return { exitCode: 127, stdout: "", stderr: error.message, timedOut: false, truncated: false };
+}
+
+function isEnoent(error: NodeJS.ErrnoException): boolean {
+  return error.code === "ENOENT";
 }
 
 function cappedConcat(existing: Buffer, chunk: Buffer): Buffer {

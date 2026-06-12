@@ -24,7 +24,7 @@ export function buildProgram(run: (request: RunRequest) => Promise<number>, list
   program
     .name("fantasticcode")
     .description("Scriptable CLI coding-agent harness")
-    .option("-m, --model <provider/model>", "model selector, such as openai/gpt-4.1")
+    .option("-m, --model <provider/model>", "model selector, such as openai/gpt-5.4-mini")
     .option("-c, --continue", "continue the latest session in this workspace")
     .option("-s, --session <id>", "continue a specific session id")
     .option("-f, --fork", "fork the selected session before running")
@@ -32,7 +32,7 @@ export function buildProgram(run: (request: RunRequest) => Promise<number>, list
     .option("-a, --agent <name>", "agent preset")
     .option("-w, --workspace <path>", "workspace root", process.cwd())
     .option("-d, --debug", "write debug event log")
-    .option("-ls, --list-sessions", "list saved sessions for the workspace and exit")
+    .option("--list-sessions", "list saved sessions for the workspace and exit")
     .action(async (options: CliOptions) => {
       if (options.listSessions === true) {
         validateListSessionsOptions(options);

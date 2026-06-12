@@ -288,7 +288,12 @@ function deniesRmRecursiveForce(tokens: string[]): boolean {
 function deniesWindowsDeletion(tokens: string[]): boolean {
   const delIndex = tokens.indexOf("del");
   const rmdirIndex = tokens.indexOf("rmdir");
-  return (delIndex !== -1 && tokens.slice(delIndex + 1).includes("/s")) || (rmdirIndex !== -1 && tokens.slice(rmdirIndex + 1).includes("/s"));
+  const rdIndex = tokens.indexOf("rd");
+  return (
+    (delIndex !== -1 && tokens.slice(delIndex + 1).includes("/s")) ||
+    (rmdirIndex !== -1 && tokens.slice(rmdirIndex + 1).includes("/s")) ||
+    (rdIndex !== -1 && tokens.slice(rdIndex + 1).includes("/s"))
+  );
 }
 
 function deniesGitHardReset(tokens: string[]): boolean {

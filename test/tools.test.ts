@@ -1,7 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { EventEmitter } from "node:events";
 import { readFile } from "node:fs/promises";
+import { PassThrough } from "node:stream";
+import { afterEach, describe, expect, it } from "vitest";
 import type { JsonObject, JsonSchema, ToolCommand } from "../src/contracts.js";
-import { createDefaultTools } from "../src/tools.js";
+import { createDefaultTools, type BashToolOptions, type CommandSpawner, type CommandSpawnOptions } from "../src/tools.js";
 import { ToolRegistry, createToolPolicyPipeline } from "../src/tool-policy.js";
 import { Workspace } from "../src/workspace.js";
 import { createTempWorkspace, type TempWorkspace } from "./helpers/temp-workspace.js";
@@ -60,7 +62,7 @@ describe("tools", () => {
 
   it("denies destructive bash commands", async () => {
     temp = await createTempWorkspace();
-    for (const command of ["rm -r -f .", "sh -c 'rm -rf .'", "echo $(rm -rf .)", "format /q C:"]) {
+    for (const command of ["rm -r -f .", "sh -c 'rm -rf .'", "echo $(rm -rf .)", "format /q C:", "rd /s ."]) {
       const result = await policy(temp.root).execute({
         call: { id: "1", name: "bash", argumentsText: JSON.stringify({ command }) },
         enabledTools: ["bash"],
@@ -69,6 +71,49 @@ describe("tools", () => {
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe("DESTRUCTIVE_COMMAND_DENIED");
     }
+  });
+
+  it("falls back to cmd.exe when bash cannot spawn on Windows", async () => {
+    temp = await createTempWorkspace();
+    const fake = fakeSpawner((call, child) => {
+      if (call.command === "bash") {
+        const error = new Error("spawn bash ENOENT") as NodeJS.ErrnoException;
+        error.code = "ENOENT";
+        child.emit("error", error);
+        return;
+      }
+      child.stdout.write("fallback ok");
+      child.emit("close", 0);
+    });
+
+    const result = await policy(temp.root, { spawner: fake.spawner, platform: "win32", comSpec: "cmd.exe" }).execute({
+      call: { id: "1", name: "bash", argumentsText: JSON.stringify({ command: "echo fallback" }) },
+      enabledTools: ["bash"],
+      workspace: new Workspace(temp.root),
+    });
+
+    expect(result.success).toBe(true);
+    expect(fake.calls.map((call) => call.command)).toEqual(["bash", "cmd.exe"]);
+    expect(fake.calls[1]?.args).toEqual(["/d", "/s", "/c", "echo fallback"]);
+    expect(result.result).toEqual({ exitCode: 0, stdout: "fallback ok", stderr: "", timedOut: false, truncated: false });
+  });
+
+  it("does not fall back when bash starts and exits 127", async () => {
+    temp = await createTempWorkspace();
+    const fake = fakeSpawner((_call, child) => {
+      child.stderr.write("command not found");
+      child.emit("close", 127);
+    });
+
+    const result = await policy(temp.root, { spawner: fake.spawner, platform: "win32", comSpec: "cmd.exe" }).execute({
+      call: { id: "1", name: "bash", argumentsText: JSON.stringify({ command: "missing-command" }) },
+      enabledTools: ["bash"],
+      workspace: new Workspace(temp.root),
+    });
+
+    expect(result.success).toBe(true);
+    expect(fake.calls.map((call) => call.command)).toEqual(["bash"]);
+    expect(result.result).toEqual({ exitCode: 127, stdout: "", stderr: "command not found", timedOut: false, truncated: false });
   });
 
   it("turns invalid provider tool JSON into a tool error", async () => {
@@ -127,7 +172,38 @@ class ComplexArgsTool implements ToolCommand {
   }
 }
 
-function policy(root: string) {
+interface SpawnCall {
+  command: string;
+  args: string[];
+  options: CommandSpawnOptions;
+}
+
+class FakeProcess extends EventEmitter {
+  readonly stdout = new PassThrough();
+  readonly stderr = new PassThrough();
+
+  kill(_signal: NodeJS.Signals): boolean {
+    this.emit("close", null);
+    return true;
+  }
+}
+
+function fakeSpawner(handler: (call: SpawnCall, child: FakeProcess) => void): { spawner: CommandSpawner; calls: SpawnCall[] } {
+  const calls: SpawnCall[] = [];
+  return {
+    calls,
+    spawner: {
+      spawn(command, args, options) {
+        const child = new FakeProcess();
+        calls.push({ command, args, options });
+        queueMicrotask(() => handler({ command, args, options }, child));
+        return child;
+      },
+    },
+  };
+}
+
+function policy(root: string, options: BashToolOptions = {}) {
   void root;
-  return createToolPolicyPipeline(new ToolRegistry(createDefaultTools()));
+  return createToolPolicyPipeline(new ToolRegistry(createDefaultTools(options)));
 }
