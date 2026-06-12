@@ -9,6 +9,18 @@ export interface SaveOptions {
   updateLatest: boolean;
 }
 
+export interface SessionSummary {
+  id: string;
+  parentSessionId?: string;
+  agent: string;
+  provider: string;
+  model: string;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+  isLatest: boolean;
+}
+
 interface SessionRow {
   id: string;
   parentSessionId: string | null;
@@ -22,6 +34,18 @@ interface SessionRow {
 
 interface SessionMessageRow {
   messageJson: string;
+}
+
+interface SessionSummaryRow {
+  id: string;
+  parentSessionId: string | null;
+  agent: string;
+  provider: string;
+  model: string;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+  isLatest: 0 | 1;
 }
 
 const latestScope = "workspace";
@@ -105,6 +129,42 @@ export class SessionStore {
       return pointer.sessionId;
     });
     return this.load(sessionId);
+  }
+
+  async listSummaries(): Promise<SessionSummary[]> {
+    return this.withDatabase((db) => {
+      const rows = db.prepare<{ latestScope: string }, SessionSummaryRow>(`
+        SELECT
+          s.id,
+          s.parent_session_id AS parentSessionId,
+          s.agent,
+          s.provider,
+          s.model,
+          s.created_at AS createdAt,
+          s.updated_at AS updatedAt,
+          COUNT(m.message_json) AS messageCount,
+          EXISTS(
+            SELECT 1
+            FROM latest_sessions l
+            WHERE l.scope = @latestScope AND l.session_id = s.id
+          ) AS isLatest
+        FROM sessions s
+        LEFT JOIN session_messages m ON m.session_id = s.id
+        GROUP BY s.id
+        ORDER BY s.updated_at DESC, s.created_at DESC, s.id DESC
+      `).all({ latestScope });
+      return rows.map((row) => ({
+        id: row.id,
+        ...(row.parentSessionId === null ? {} : { parentSessionId: row.parentSessionId }),
+        agent: row.agent,
+        provider: row.provider,
+        model: row.model,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        messageCount: row.messageCount,
+        isLatest: row.isLatest === 1,
+      }));
+    });
   }
 
   fork(source: Session): Session {

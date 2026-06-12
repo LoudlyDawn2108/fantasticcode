@@ -5,6 +5,7 @@ import { Command, CommanderError } from "commander";
 import type { RunRequest } from "./contracts.js";
 import { formatError, normalizeError } from "./errors.js";
 import { createDefaultHarness } from "./composition.js";
+import { SessionStore, type SessionSummary } from "./session.js";
 
 export interface CliOptions {
   model?: string;
@@ -15,9 +16,10 @@ export interface CliOptions {
   agent?: string;
   workspace?: string;
   debug?: boolean;
+  listSessions?: boolean;
 }
 
-export function buildProgram(run: (request: RunRequest) => Promise<number>): Command {
+export function buildProgram(run: (request: RunRequest) => Promise<number>, listSessions: (workspaceRoot: string) => Promise<number> = defaultListSessions): Command {
   const program = new Command();
   program
     .name("fantasticcode")
@@ -25,12 +27,18 @@ export function buildProgram(run: (request: RunRequest) => Promise<number>): Com
     .option("-m, --model <provider/model>", "model selector, such as openai/gpt-4.1")
     .option("-c, --continue", "continue the latest session in this workspace")
     .option("-s, --session <id>", "continue a specific session id")
-    .option("--fork", "fork the selected session before running")
-    .option("--prompt <text>", "prompt text; if omitted, piped stdin is used")
-    .option("--agent <name>", "agent preset")
-    .option("--workspace <path>", "workspace root", process.cwd())
-    .option("--debug", "write debug event log")
+    .option("-f, --fork", "fork the selected session before running")
+    .option("-p, --prompt <text>", "prompt text; if omitted, piped stdin is used")
+    .option("-a, --agent <name>", "agent preset")
+    .option("-w, --workspace <path>", "workspace root", process.cwd())
+    .option("-d, --debug", "write debug event log")
+    .option("-ls, --list-sessions", "list saved sessions for the workspace and exit")
     .action(async (options: CliOptions) => {
+      if (options.listSessions === true) {
+        validateListSessionsOptions(options);
+        process.exitCode = await listSessions(options.workspace ?? process.cwd());
+        return;
+      }
       const prompt = options.prompt ?? (await readPipedStdin());
       const request: RunRequest = {
         prompt,
@@ -45,6 +53,38 @@ export function buildProgram(run: (request: RunRequest) => Promise<number>): Com
       process.exitCode = await run(request);
     });
   return program;
+}
+
+export function formatSessionSummaries(summaries: SessionSummary[]): string {
+  if (summaries.length === 0) {
+    return "No sessions found.";
+  }
+  return summaries
+    .map((summary) => {
+      const marker = summary.isLatest ? "*" : " ";
+      return `${marker} ${summary.id}  ${summary.updatedAt}  agent=${summary.agent}  model=${summary.provider}/${summary.model}  messages=${summary.messageCount}`;
+    })
+    .join("\n");
+}
+
+async function defaultListSessions(workspaceRoot: string): Promise<number> {
+  const summaries = await new SessionStore(workspaceRoot).listSummaries();
+  stdout.write(`${formatSessionSummaries(summaries)}\n`);
+  return 0;
+}
+
+function validateListSessionsOptions(options: CliOptions): void {
+  const conflicts = [
+    ...(options.model === undefined ? [] : ["--model"]),
+    ...(options.prompt === undefined ? [] : ["--prompt"]),
+    ...(options.agent === undefined ? [] : ["--agent"]),
+    ...(options.continue === true ? ["--continue"] : []),
+    ...(options.session === undefined ? [] : ["--session"]),
+    ...(options.fork === true ? ["--fork"] : []),
+  ];
+  if (conflicts.length > 0) {
+    throw new CommanderError(2, "commander.listSessionsConflict", `--list-sessions cannot be combined with ${conflicts.join(", ")}`);
+  }
 }
 
 export async function main(argv = process.argv): Promise<number> {
