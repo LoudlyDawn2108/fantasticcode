@@ -62,13 +62,13 @@ function builtInConfig(env: NodeJS.ProcessEnv, agentRoot: string): HarnessConfig
   const providers = Object.fromEntries(defaultProviderConfigs(env).map((provider) => [provider.name, provider]));
   return {
     version: 1,
-    defaults: { model: "openai/gpt-4.1", agent: "coder" },
+    defaults: { model: "openai/gpt-5.4-mini", agent: "coder" },
     providers,
     agents: {
       coder: {
         description: "Default coding agent",
         promptFile: join(agentRoot, "coder.md"),
-        enabledTools: ["read", "edit", "apply_patch", "bash"],
+        enabledTools: ["read", "apply_patch", "bash"],
       },
       reviewer: {
         extends: "coder",
