@@ -45,8 +45,24 @@ export interface ProviderModel {
 
 export interface ProviderConfig {
   name: string;
+  sdk?: "openai" | "anthropic";
   baseURL: string;
-  apiKeyEnv: string;
+  apiKeyEnv?: string;
+  apiKey?: string;
+  defaultModel?: string;
+  models?: Record<string, ModelConfig>;
+  maxTokens?: number;
+}
+
+export interface ModelConfig {
+  id?: string;
+  displayName?: string;
+  capabilities?: {
+    tools?: boolean;
+    vision?: boolean;
+    jsonMode?: boolean;
+    maxInputTokens?: number;
+  };
 }
 
 export interface ResolvedProvider {
@@ -106,8 +122,19 @@ export interface ModelClient {
 
 export interface AgentPreset {
   name: string;
+  description?: string;
   systemPrompt: string;
   enabledTools: string[];
+  model?: string;
+}
+
+export interface HarnessDefaults {
+  model?: string;
+  provider?: string;
+  agent?: string;
+}
+
+export interface RunnerConfig {
   maxToolTurns: number;
 }
 
@@ -208,11 +235,15 @@ export interface PreparedRun {
   eventBus: AgentEventBus;
   workspace: Workspace;
   updateLatest: boolean;
+  maxToolTurns: number;
 }
 
 export interface HarnessSettings {
   workspaceRoot: string;
   providers?: ProviderConfig[];
+  agentPresets?: AgentPreset[];
+  defaults?: HarnessDefaults;
+  runner?: RunnerConfig;
   debug?: boolean;
   console?: boolean;
 }

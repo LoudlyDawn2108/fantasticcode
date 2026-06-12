@@ -6,6 +6,7 @@ import type { SessionStore } from "./session.js";
 export interface SessionSelectionInput {
   request: RunRequest;
   defaultAgent: AgentPreset;
+  defaultModel?: string;
   sessionStore: SessionStore;
 }
 
@@ -24,7 +25,7 @@ export class NewSessionSelectionStrategy implements SessionSelectionStrategy {
   readonly name = "new";
 
   async select(input: SessionSelectionInput): Promise<SessionSelectionResult> {
-    const model = input.request.model;
+    const model = input.request.model ?? input.defaultAgent.model ?? input.defaultModel;
     if (model === undefined) {
       throw new HarnessError("validation", "MODEL_REQUIRED", "--model is required for a new session");
     }

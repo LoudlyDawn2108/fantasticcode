@@ -11,6 +11,7 @@
   },
   "files": [
     "dist",
+    "agents",
     "README.md",
     "docs"
   ],
@@ -26,9 +27,13 @@
     "qa": "npm run typecheck && npm test -- --run && npm run build && npm pack --dry-run && node dist/cli.js --help"
   },
   "dependencies": {
-    "commander": "^14.0.2"
+    "@anthropic-ai/sdk": "^0.104.1",
+    "better-sqlite3": "^12.10.0",
+    "commander": "^14.0.2",
+    "openai": "^6.42.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.10.1",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",

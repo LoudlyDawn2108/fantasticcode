@@ -1,6 +1,7 @@
 export * from "./contracts.js";
 export * from "./errors.js";
 export * from "./model-id.js";
+export * from "./config.js";
 export * from "./agent.js";
 export * from "./provider.js";
 export * from "./session.js";

@@ -1,4 +1,4 @@
-import type { AgentPreset, ModelClient, PreparedRun, ProviderConfig, RunRequest, Session } from "./contracts.js";
+import type { AgentPreset, HarnessDefaults, ModelClient, PreparedRun, ProviderConfig, RunRequest, RunnerConfig, Session } from "./contracts.js";
 import { AgentRegistry } from "./agent.js";
 import { createEventBus, createSessionStore, createToolRegistry } from "./construction.js";
 import { HarnessError } from "./errors.js";
@@ -20,6 +20,8 @@ export interface PreflightContext {
   toolRegistry: ToolRegistry;
   eventBus: AgentEventBus;
   sessionSelectionResolver: SessionSelectionStrategyResolver;
+  defaults: HarnessDefaults;
+  runner: RunnerConfig;
   selectedAgentName?: string;
   agent?: AgentPreset;
   session?: Session;
@@ -52,6 +54,9 @@ export function createPreflightContext(input: {
   request: RunRequest;
   workspaceRoot: string;
   providers?: ProviderConfig[];
+  agentPresets: AgentPreset[];
+  defaults?: HarnessDefaults;
+  runner: RunnerConfig;
   debug?: boolean;
   console?: boolean;
 }): PreflightContext {
@@ -61,7 +66,7 @@ export function createPreflightContext(input: {
     request: input.request,
     workspace,
     sessionStore: createSessionStore(workspace.root),
-    agentRegistry: new AgentRegistry(),
+    agentRegistry: new AgentRegistry(input.agentPresets),
     providerRegistry: new ProviderRegistry(input.providers),
     providerFactoryRegistry: new ProviderFactoryRegistry(),
     toolRegistry,
@@ -71,6 +76,8 @@ export function createPreflightContext(input: {
       ...(input.console === undefined ? {} : { console: input.console }),
     }),
     sessionSelectionResolver: new SessionSelectionStrategyResolver(),
+    defaults: input.defaults ?? {},
+    runner: input.runner,
   };
 }
 
@@ -90,7 +97,7 @@ class RequestValidationHandler implements PreflightHandler {
     if (request.fork === true && request.continueLast !== true && request.sessionId === undefined) {
       throw new HarnessError("validation", "FORK_REQUIRES_SOURCE", "--fork requires --continue or --session");
     }
-    if (request.model === undefined && request.continueLast !== true && request.sessionId === undefined) {
+    if (request.model === undefined && input.defaults.model === undefined && request.continueLast !== true && request.sessionId === undefined) {
       throw new HarnessError("validation", "MODEL_REQUIRED", "--model is required for a new session");
     }
     return next(input);
@@ -99,16 +106,18 @@ class RequestValidationHandler implements PreflightHandler {
 
 class AgentResolutionHandler implements PreflightHandler {
   async handle(input: PreflightContext, next: (input: PreflightContext) => Promise<PreparedRun>): Promise<PreparedRun> {
-    return next({ ...input, agent: input.agentRegistry.resolve(input.selectedAgentName) });
+    return next({ ...input, agent: input.agentRegistry.resolve(requireAgentName(input.selectedAgentName ?? input.defaults.agent)) });
   }
 }
 
 class SessionSelectionHandler implements PreflightHandler {
   async handle(input: PreflightContext, next: (input: PreflightContext) => Promise<PreparedRun>): Promise<PreparedRun> {
     const strategy = input.sessionSelectionResolver.resolve(input.request);
+    const defaultAgent = input.agentRegistry.resolve(requireAgentName(input.request.agent ?? input.defaults.agent));
     const result = await strategy.select({
       request: input.request,
-      defaultAgent: input.agentRegistry.resolve(),
+      defaultAgent,
+      ...(input.defaults.model === undefined ? {} : { defaultModel: input.defaults.model }),
       sessionStore: input.sessionStore,
     });
     return next({
@@ -156,6 +165,7 @@ function finalizePreparedRun(input: PreflightContext): PreparedRun {
     eventBus: input.eventBus,
     workspace: input.workspace,
     updateLatest: input.updateLatest ?? true,
+    maxToolTurns: input.runner.maxToolTurns,
   };
 }
 
@@ -183,6 +193,13 @@ function requireModelClient(input: PreflightContext): ModelClient {
 function requireString(value: string | undefined, name: string): string {
   if (value === undefined) {
     throw new HarnessError("runner", "PREFLIGHT_INCOMPLETE", `${name} was not resolved`);
+  }
+  return value;
+}
+
+function requireAgentName(value: string | undefined): string {
+  if (value === undefined || value.trim() === "") {
+    throw new HarnessError("config", "DEFAULT_AGENT_REQUIRED", "a default agent must be configured");
   }
   return value;
 }

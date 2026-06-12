@@ -14,7 +14,7 @@ export class Runner {
       machine.transitionTo("running");
 
       let finalOutput = "";
-      for (let turn = 0; turn <= prepared.agent.maxToolTurns; turn += 1) {
+      for (let turn = 0; turn <= prepared.maxToolTurns; turn += 1) {
         const response = await prepared.modelClient.complete({
           model: prepared.model,
           messages: buildModelMessages(prepared),
@@ -33,7 +33,7 @@ export class Runner {
           return { sessionId: session.id, output: finalOutput, exitCode: 0 };
         }
 
-        if (turn === prepared.agent.maxToolTurns) {
+        if (turn === prepared.maxToolTurns) {
           throw new HarnessError("runner", "MAX_TOOL_TURNS", "maximum tool turns reached");
         }
 

@@ -1,11 +1,11 @@
 # CLI Agent Harness Design
 
-This document describes a simple command-line agent harness that demonstrates Gang of Four design patterns in a realistic coding-agent architecture. The harness is intentionally not a TUI. It is a normal CLI that accepts flags, calls an OpenAI-compatible provider, executes tools, and persists resumable sessions.
+This document describes a simple command-line agent harness that demonstrates Gang of Four design patterns in a realistic coding-agent architecture. The harness is intentionally not a TUI. It is a normal CLI that accepts flags, calls SDK-backed provider adapters, executes tools, and persists resumable sessions in SQLite.
 
 ## Goals
 
 - Provide a small but realistic agent harness for learning design patterns.
-- Support OpenAI-compatible provider endpoints.
+- Support official SDK-backed providers, starting with OpenAI and Anthropic.
 - Keep the CLI argument-based and scriptable.
 - Support resumable and forkable sessions.
 - Expose a small set of coding tools: `read`, `edit`, `apply_patch`, and `bash`.
@@ -21,7 +21,7 @@ fantasticcode --model openai/gpt-4.1 --prompt "inspect this repo"
 fantasticcode --continue --prompt "continue the last task"
 fantasticcode --session sess_123 --prompt "resume this session"
 fantasticcode --session sess_123 --fork --prompt "try another approach"
-fantasticcode --agent coder --model openrouter/anthropic/claude-sonnet-4 --prompt "fix the bug"
+fantasticcode --agent coder --model anthropic/claude-sonnet-4 --prompt "fix the bug"
 ```
 
 Supported flags:
@@ -91,9 +91,9 @@ Runner loop
 | `AgentHarness` | Coordinate provider, session, agent, tools, and runner. | Facade |
 | `ProviderRegistry` | Resolve `provider/model` into provider config. | Strategy |
 | `ProviderFactory` | Create provider adapters from provider config. | Factory Method |
-| `ProviderAdapter` | Normalize OpenAI-compatible endpoints or custom SDKs into one internal interface. | Adapter |
+| `ProviderAdapter` | Normalize provider SDKs into one internal interface. | Adapter |
 | `AgentRegistry` | Select an agent preset by name. | Strategy |
-| `SessionStore` | Save, load, continue, and fork session snapshots. | Memento, Prototype |
+| `SessionStore` | Save, load, continue, and fork SQLite-backed session snapshots. | Memento, Prototype |
 | `ToolRegistry` | Register and look up executable tools. | Command |
 | `PreflightPipeline` | Validate run requests before the runner starts. | Chain of Responsibility |
 | `ToolPolicyPipeline` | Validate and authorize tool calls before execution. | Chain of Responsibility |
@@ -101,6 +101,61 @@ Runner loop
 | `AgentEventBus` | Publish run, model, tool, and session events to subscribers. | Observer |
 | `Runner` | Drive model calls and tool execution until completion. | Coordinates the state machine, event bus, and registered patterns. |
 | `Workspace` | Restrict file and process access to the project workspace. | None directly; it is a safety boundary. |
+
+## Composition Root / Dependency Injection
+
+The CLI entrypoint is the composition root. It loads JSON config once at startup, applies CLI overrides, validates and normalizes the result, creates infrastructure, then injects concrete dependencies into `AgentHarness`.
+
+```ts
+const config = loadRuntimeConfig()
+
+const providerRegistry = createProviderRegistry(config.providers)
+const providerFactory = createProviderFactory(config.providers)
+const sessionStore = createSQLiteSessionStore(config.persistence)
+const agentRegistry = createAgentRegistry(config.agents)
+const toolRegistry = createToolRegistry(config.tools)
+const eventBus = createAgentEventBus(config.events)
+const runnerStateMachine = createRunnerStateMachine()
+
+const runner = createRunner({
+  providerRegistry,
+  providerFactory,
+  sessionStore,
+  toolRegistry,
+  eventBus,
+  runnerStateMachine,
+})
+
+const harness = createAgentHarness({
+  config,
+  agentRegistry,
+  runner,
+})
+```
+
+Injected dependencies:
+
+| Dependency | Injected into | Why |
+|---|---|---|
+| `RuntimeConfig` | factories, harness | Immutable settings and defaults. |
+| `ProviderRegistry` | runner or provider resolver | Provider/model lookup. |
+| `ProviderFactory` | runner or provider resolver | SDK adapter creation. |
+| `SessionStore` | runner | SQLite-backed persistence behind an interface. |
+| `AgentRegistry` | harness | Agent preset selection. |
+| `ToolRegistry` | runner and tool pipeline | Tool command lookup. |
+| `PreflightPipeline` | harness or runner | Request validation and setup. |
+| `ToolPolicyPipeline` | runner | Tool authorization and sandbox checks. |
+| `AgentEventBus` | runner | Lifecycle event publication. |
+| `RunnerStateMachine` | runner | Legal lifecycle transitions. |
+
+Rules:
+
+- Components must not read config files, CLI flags, or global configuration directly.
+- Components receive immutable, already-resolved values or interfaces.
+- Long-lived collaborators are created at startup, not during normal execution.
+- Tests can replace registries, stores, factories, and tools with in-memory fakes.
+- Dependency injection is not counted as a GoF pattern; it is the wiring discipline that keeps the GoF pattern boundaries visible.
+- Do not use Singleton for config or settings. If Singleton appears later, restrict it to rare process-wide infrastructure handles.
 
 ## Implemented GoF Patterns (v1)
 
@@ -143,7 +198,7 @@ Strategies in this harness:
 
 | Strategy family | Selected by | Examples |
 |---|---|---|
-| Provider strategy | `--model provider/model` | `openai`, `openrouter`, `local` |
+| Provider strategy | `--model provider/model` | `openai`, `anthropic`, future SDK providers |
 | Agent strategy | `--agent` | `coder`, `reviewer`, `explainer` |
 | Session selection strategy | `--continue`, `--session`, new run | latest session, named session, new session |
 
@@ -162,9 +217,11 @@ type AgentPreset = {
   name: string
   systemPrompt: string
   enabledTools: string[]
-  maxToolTurns: number
+  model?: string
 }
 ```
+
+Agent metadata comes from JSON config, while the prompt body comes from Markdown. Runtime execution limits belong to `RunnerConfig`, not agent config.
 
 Avoid overuse: CLI flags themselves are not strategies. The strategy is the runtime behavior selected by the flag.
 
@@ -172,7 +229,7 @@ Avoid overuse: CLI flags themselves are not strategies. The strategy is the runt
 
 Intent: convert one interface into another interface expected by the client.
 
-Providers may expose OpenAI-compatible HTTP endpoints or custom SDKs. The core runner should not depend on provider-specific request types, response types, stream events, SDK clients, or wire-format quirks. Each provider adapter exposes the same internal interface.
+Providers expose different SDK clients and response shapes. The core runner should not depend on provider-specific request types, response types, stream events, SDK clients, or wire-format quirks. Each provider adapter exposes the same internal interface.
 
 ```text
 Runner
@@ -180,10 +237,9 @@ Runner
   v
 ModelClient interface
   |
-  +-- OpenAICompatibleAdapter
-  +-- AnthropicSdkAdapter
-  +-- GeminiSdkAdapter
-  +-- LocalModelAdapter
+  +-- OpenAIProviderAdapter
+  +-- AnthropicProviderAdapter
+  +-- FutureSdkProviderAdapter
 ```
 
 The same pattern can normalize tool schemas and tool results if model providers expect slightly different shapes.
@@ -192,7 +248,7 @@ Why it fits:
 
 - The runner has one stable contract.
 - Provider quirks stay at the edge.
-- OpenAI-compatible and custom-SDK providers can be added without rewriting the runner.
+- New SDK providers can be added without rewriting the runner.
 
 Avoid overuse: do not leak provider-specific fields, SDK objects, or streaming chunk shapes into the internal message model. If provider-specific fields are needed, keep them in adapter config.
 
@@ -253,7 +309,7 @@ Why it fits:
 
 - Session continuation is explicit and inspectable.
 - The runner can evolve without changing the CLI contract.
-- JSON session files make the pattern easy to demonstrate.
+- SQLite rows make the memento durable, queryable, and inspectable.
 
 Avoid overuse: store serializable conversation state, not live runtime objects such as sockets, processes, or file handles.
 
@@ -298,7 +354,7 @@ function createRunner(config: RunnerConfig): Runner
 
 Why it fits:
 
-- Provider creation differs between OpenAI-compatible HTTP endpoints and custom SDKs.
+- Provider creation differs between official SDK clients and future SDK providers.
 - Tests can replace factories with in-memory implementations.
 - Construction stays at the composition boundary instead of spreading through the runner.
 
@@ -451,7 +507,7 @@ For the first version, plain composition in `Runner` is likely simpler. Introduc
 
 ### Singleton
 
-Use this only for expensive process-wide infrastructure handles, such as a future database connection pool.
+Use this only for expensive process-wide infrastructure handles, such as a future shared connection manager for a long-lived process.
 
 Do not use Singleton for settings. Load settings once at CLI startup, treat them as immutable, and pass them explicitly into factories and the harness.
 
@@ -463,7 +519,7 @@ class DatabaseConnectionManager {
 }
 ```
 
-Application code should depend on interfaces such as `SessionStore`, not on the singleton connection manager. Current JSON-backed sessions do not need Singleton.
+Application code should depend on interfaces such as `SessionStore`, not on the singleton connection manager. The v1 SQLite store should own its connection lifecycle internally; that does not require a public Singleton pattern.
 
 ## Provider Design
 
@@ -475,38 +531,244 @@ openai/gpt-4.1
 provider model
 ```
 
-OpenAI-compatible provider config should define the endpoint and API key environment variable.
+Provider config should be user-editable JSON. The harness loads JSON once at CLI startup, validates it, normalizes it, and passes the resolved config into `ProviderRegistry` and `ProviderFactory`. Provider adapters should receive concrete values such as `baseUrl`, `apiKey`, and `model`; they should not read global configuration directly.
+
+Use two JSON files by default:
+
+| File | Purpose | Commit? |
+|---|---|---|
+| `agent-harness.config.json` | Shareable provider, model, base URL, and default settings. | Yes |
+| `agent-harness.local.json` | API keys and private per-user overrides. | No |
+
+The same schema can also support a single personal JSON file, but API keys should not be committed to the repository.
 
 ```ts
+type HarnessConfig = {
+  version: 1
+  defaults?: {
+    model?: string
+    provider?: string
+    agent?: string
+  }
+  providers: Record<string, ProviderConfig>
+  agents?: Record<string, AgentConfig>
+}
+
 type ProviderConfig = {
-  name: string
-  baseURL: string
-  apiKeyEnv: string
+  sdk: "openai" | "anthropic"
+  baseUrl?: string
+  apiKey?: string
+  defaultModel?: string
+  models?: Record<string, ModelConfig>
+}
+
+type ModelConfig = {
+  id?: string
+  displayName?: string
+  capabilities?: {
+    tools?: boolean
+    vision?: boolean
+    jsonMode?: boolean
+    maxInputTokens?: number
+  }
+}
+
+type AgentConfig = {
+  description?: string
+  extends?: string
+  promptFile: string
+  enabledTools: string[]
+  model?: string
 }
 ```
 
-Example provider registry:
+Example `agent-harness.config.json`:
+
+```json
+{
+  "version": 1,
+  "defaults": {
+    "model": "openai/gpt-4.1",
+    "agent": "coder"
+  },
+  "providers": {
+    "openai": {
+      "sdk": "openai",
+      "baseUrl": "https://api.openai.com/v1",
+      "defaultModel": "gpt-4.1",
+      "models": {
+        "gpt-4.1": {
+          "capabilities": {
+            "tools": true,
+            "vision": true,
+            "jsonMode": true
+          }
+        },
+        "gpt-4.1-mini": {
+          "capabilities": {
+            "tools": true,
+            "jsonMode": true
+          }
+        }
+      }
+    },
+    "anthropic": {
+      "sdk": "anthropic",
+      "baseUrl": "https://api.anthropic.com",
+      "defaultModel": "claude-sonnet-4",
+      "models": {
+        "claude-sonnet-4": {
+          "capabilities": {
+            "tools": true,
+            "vision": true
+          }
+        }
+      }
+    }
+  },
+  "agents": {
+    "coder": {
+      "description": "Default coding agent",
+      "promptFile": "./agents/coder.md",
+      "enabledTools": ["read", "edit", "apply_patch", "bash"],
+      "model": "openai/gpt-4.1"
+    },
+    "reviewer": {
+      "extends": "coder",
+      "description": "Code review agent",
+      "promptFile": "./agents/reviewer.md",
+      "enabledTools": ["read", "bash"],
+      "model": "anthropic/claude-sonnet-4"
+    }
+  }
+}
+```
+
+Example `agent-harness.local.json`:
+
+```json
+{
+  "version": 1,
+  "providers": {
+    "openai": {
+      "apiKey": "sk-..."
+    },
+    "anthropic": {
+      "apiKey": "sk-ant-..."
+    }
+  }
+}
+```
+
+Configuration loading order:
+
+```text
+built-in defaults
+  -> agent-harness.config.json
+  -> agent-harness.local.json
+  -> CLI flags
+```
+
+The loader deep-merges provider entries by provider ID, then validates the final shape before the run starts.
+
+Validation rules:
+
+| Rule | Failure |
+|---|---|
+| `providers` must be a non-empty object. | No provider can be selected. |
+| Each provider must define `sdk`. | Factory cannot choose an adapter. |
+| Each provider should define `baseUrl` unless the SDK has a safe built-in default. | Adapter cannot construct a client predictably. |
+| Each provider should define at least one model or a `defaultModel`. | Model resolution is ambiguous. |
+| Auth-required providers must have `apiKey` after config merge. | Adapter cannot authenticate. |
+| Each configured agent must define `promptFile` and `enabledTools`. | Agent preset cannot be built. |
+| Agent `promptFile` paths must stay inside the workspace or configured agent directory. | Prompt loading could escape the project boundary. |
+
+Model resolution rules:
+
+| Input | Resolution |
+|---|---|
+| `--model provider/model` | Use that provider and model. |
+| No CLI model + `defaults.model` | Use the configured `provider/model`. |
+| No CLI model + `defaults.provider` | Use that provider's `defaultModel`. |
+| Unqualified model name | Error; require `provider/model` to avoid ambiguity. |
+
+Example normalized provider registry after loading JSON:
 
 ```ts
 const providers = {
   openai: {
-    name: "openai",
-    baseURL: "https://api.openai.com/v1",
-    apiKeyEnv: "OPENAI_API_KEY",
+    sdk: "openai",
+    baseUrl: "https://api.openai.com/v1",
+    apiKey: "sk-...",
+    defaultModel: "gpt-4.1",
+    models: {
+      "gpt-4.1": { id: "gpt-4.1", capabilities: { tools: true } },
+    },
   },
-  openrouter: {
-    name: "openrouter",
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKeyEnv: "OPENROUTER_API_KEY",
+  anthropic: {
+    sdk: "anthropic",
+    baseUrl: "https://api.anthropic.com",
+    apiKey: "sk-ant-...",
+    defaultModel: "claude-sonnet-4",
+    models: {
+      "claude-sonnet-4": { id: "claude-sonnet-4", capabilities: { tools: true } },
+    },
   },
 }
 ```
 
-The registry chooses config. The adapter normalizes provider API differences. This keeps Strategy and Adapter responsibilities separate.
+The config loader parses and validates JSON. The registry resolves provider and model names. The factory creates the correct SDK adapter from concrete config values. The adapter normalizes provider API differences. This keeps configuration loading, Strategy, Factory Method, and Adapter responsibilities separate.
 
-### Custom SDK Providers
+## Agent Design
 
-Some providers may require a provider-native SDK instead of an OpenAI-compatible HTTP endpoint. These providers should still normalize into the internal `ModelClient` interface.
+Agents are configured with JSON metadata and Markdown prompt files. JSON owns structure and validation. Markdown owns human-editable prompt content.
+
+```text
+agent-harness.config.json
+  -> agents.coder metadata
+  -> ./agents/coder.md prompt body
+  -> AgentConfigAdapter
+  -> AgentPreset
+  -> AgentRegistry
+```
+
+Example `agents/coder.md`:
+
+```md
+# Coder Agent
+
+You are a careful coding agent. Inspect the workspace before editing, prefer small patches, and verify changes before reporting completion.
+```
+
+Agent config fields:
+
+| Field | Purpose |
+|---|---|
+| `description` | Human-readable explanation for help output. |
+| `extends` | Optional base agent to clone before applying overrides. |
+| `promptFile` | Markdown file containing the system prompt. |
+| `enabledTools` | Tool command names available to the agent. |
+| `model` | Optional model override in `provider/model` format. |
+
+Pattern mapping:
+
+| Pattern | Agent responsibility |
+|---|---|
+| Strategy | `--agent` selects different validated `AgentPreset` behavior. |
+| Adapter | `AgentConfigAdapter` converts JSON metadata plus Markdown into internal `AgentPreset`. |
+| Factory Method | `createAgentRegistry(config.agents)` builds the registry from validated presets. |
+| Prototype | `extends` clones a base agent preset and applies overrides. |
+
+Rules:
+
+- `AgentRegistry` selects already-built presets; it does not parse JSON or Markdown.
+- `AgentConfigAdapter` loads prompt Markdown and normalizes config into `AgentPreset`.
+- Agent config must not include runner execution limits. Tool-turn limits belong in `RunnerConfig`.
+- Prototype is used only when `extends` is present; otherwise agent configs are direct presets.
+
+### SDK Provider Adapters
+
+The v1 providers use official SDKs directly: OpenAI SDK and Anthropic SDK. Both providers normalize into the internal `ModelClient` interface so the runner remains provider-agnostic.
 
 ```text
 Runner
@@ -514,19 +776,26 @@ Runner
   v
 ModelClient
   |
-  +-- OpenAI-compatible HTTP adapter
-  +-- Custom SDK adapter
-        |
-        +-- provider SDK client
+  +-- OpenAIProviderAdapter
+  |     +-- official OpenAI SDK client
+  |     +-- request mapper
+  |     +-- response mapper
+  |     +-- stream parser
+  |     +-- error mapper
+  |     +-- capability metadata
+  |
+  +-- AnthropicProviderAdapter
+        +-- official Anthropic SDK client
         +-- request mapper
         +-- response mapper
         +-- stream parser
-        +-- capability detector
+        +-- error mapper
+        +-- capability metadata
 ```
 
 The runner must not depend on SDK-specific clients, request types, response types, stream events, retry APIs, or configuration objects. Provider-specific details stay behind the adapter and factory boundary.
 
-Custom SDK provider responsibilities:
+SDK provider responsibilities:
 
 | Responsibility | Where it belongs |
 |---|---|
@@ -534,13 +803,15 @@ Custom SDK provider responsibilities:
 | Request mapping | Provider adapter |
 | Response mapping | Provider adapter |
 | Streaming quirks | Provider adapter or stream parser |
+| Error mapping | Provider adapter |
 | Retry policy | Provider adapter or provider factory |
 | Token counting | Provider adapter or token counter collaborator |
 | Capability detection | Provider adapter or capability detector collaborator |
 
-Simple custom SDK providers can use Factory Method:
+Simple SDK providers can use Factory Method:
 
 ```ts
+function createOpenAIProvider(config: OpenAIConfig): ModelClient
 function createAnthropicProvider(config: AnthropicConfig): ModelClient
 function createGeminiProvider(config: GeminiConfig): ModelClient
 ```
@@ -551,6 +822,7 @@ Use Abstract Factory only when the provider needs a family of related objects th
 interface CustomSdkProviderFactory {
   createClient(): ModelClient
   createStreamParser(): StreamParser
+  createErrorMapper(): ErrorMapper
   createTokenCounter(): TokenCounter
   createCapabilityDetector(): CapabilityDetector
 }
@@ -560,27 +832,37 @@ The factory can construct provider-specific collaborators, but the runner should
 
 ## Session Design
 
-Store sessions as JSON files under the project-local state directory:
+Store sessions in a project-local SQLite database behind the `SessionStore` interface:
 
 ```text
 .fantasticcode/
-  sessions/
-    latest.json
-    sess_123.json
-    sess_456.json
+  state.sqlite
 ```
 
-`latest.json` can either contain the latest session ID or be a copy of the latest session. Storing only the ID avoids duplication.
+The runner should never depend on SQL directly. `SQLiteSessionStore` owns schema migrations, transactions, serialization, and latest-session lookup.
+
+Initial tables:
+
+| Table | Purpose |
+|---|---|
+| `sessions` | Session metadata: ID, parent ID, provider, model, agent, timestamps. |
+| `session_messages` | Ordered user, assistant, and tool-result messages. |
+| `tool_calls` | Normalized tool call records and results for audit/debugging. |
+| `session_events` | Optional event log emitted by `AgentEventBus`. |
+| `latest_sessions` | Workspace-scoped pointer to the last successfully saved session. |
+| `schema_migrations` | Applied migration IDs and timestamps. |
+
+Persistence operations that modify multiple tables should run in one transaction. `save`, `fork`, and `updateLatest` should either all succeed or all roll back.
 
 Session operations:
 
 | Operation | Behavior | Pattern |
 |---|---|---|
-| Create | Start an empty session with a new ID. | Memento |
-| Continue latest | Load the ID from `latest.json`, then load that session. | Memento |
-| Continue by ID | Load `sessions/<id>.json`. | Memento |
-| Fork | Deep-copy the selected session into a new ID. | Prototype |
-| Save | Write the updated session atomically. | Memento |
+| Create | Insert a new session row with initial metadata. | Memento |
+| Continue latest | Read the workspace latest pointer, then load that session. | Memento |
+| Continue by ID | Load session metadata and ordered messages by ID. | Memento |
+| Fork | Clone metadata and messages into a new session ID with `parent_session_id`. | Prototype |
+| Save | Persist messages, tool calls, events, and latest pointer atomically. | Memento |
 
 ## Tool Design
 
@@ -648,7 +930,7 @@ This flow keeps the runner deterministic while using the v1 patterns deliberatel
 |---|---|---|
 | Facade | Implemented | `AgentHarness` |
 | Strategy | Implemented | provider selection, agent preset, session selection |
-| Adapter | Implemented | OpenAI-compatible and custom-SDK provider adapters |
+| Adapter | Implemented | OpenAI and Anthropic SDK provider adapters normalizing into `ModelClient` |
 | Command | Implemented | `read`, `edit`, `apply_patch`, `bash`, and future tools |
 | Memento | Implemented | session snapshots |
 | Prototype | Implemented | `--fork` session cloning |
@@ -658,7 +940,7 @@ This flow keeps the runner deterministic while using the v1 patterns deliberatel
 | State | Implemented | `RunnerStateMachine` lifecycle transitions |
 | Abstract Factory | Deferred | provider object families |
 | Template Method | Deferred | multiple runner algorithms |
-| Singleton | Conditional | future database connection manager only |
+| Singleton | Conditional | future shared connection manager only; not required by v1 SQLite storage |
 
 ## Patterns Intentionally Not Forced
 
@@ -673,14 +955,16 @@ This flow keeps the runner deterministic while using the v1 patterns deliberatel
 
 1. Create the CLI parser and `RunRequest` type.
 2. Create `AgentHarness.run(request)` as the facade.
-3. Add provider registry, provider factories, and one OpenAI-compatible adapter.
-4. Add JSON-backed `SessionStore` with create, continue, load, fork, and save.
-5. Add `AgentRegistry` with a default `coder` agent.
-6. Add `ToolRegistry` and implement `read`, `edit`, `apply_patch`, and `bash` as commands.
-7. Add `PreflightPipeline` and `ToolPolicyPipeline` handlers.
-8. Add `AgentEventBus` with console, transcript, and debug log sinks.
-9. Add `RunnerStateMachine` with explicit lifecycle states and legal transitions.
-10. Add a bounded runner loop with a max tool-turn limit.
-11. Persist every run and update `latest.json`.
+3. Add JSON config loading, merging, validation, and normalization for `agent-harness.config.json` and `agent-harness.local.json`.
+4. Add the CLI composition root that wires and injects all runtime dependencies.
+5. Add provider registry, provider factories, `OpenAIProviderAdapter`, and `AnthropicProviderAdapter`.
+6. Add SQLite-backed `SessionStore` with create, continue, load, fork, save, migrations, and transactions.
+7. Add JSON+Markdown agent config loading with `AgentConfigAdapter`, `AgentRegistry`, and a default `coder` agent.
+8. Add `ToolRegistry` and implement `read`, `edit`, `apply_patch`, and `bash` as commands.
+9. Add `PreflightPipeline` and `ToolPolicyPipeline` handlers.
+10. Add `AgentEventBus` with console, transcript, and debug log sinks.
+11. Add `RunnerStateMachine` with explicit lifecycle states and legal transitions.
+12. Add a bounded runner loop with a max tool-turn limit.
+13. Persist every run and update the DB-backed latest-session pointer.
 
 The result is still small enough for a learning project, but it demonstrates ten concrete GoF patterns used by production-style agent systems.

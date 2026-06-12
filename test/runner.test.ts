@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { ModelClient } from "../src/contracts.js";
-import { AgentRegistry } from "../src/agent.js";
+import type { AgentPreset, ModelClient } from "../src/contracts.js";
 import { AgentEventBus } from "../src/events.js";
 import { Runner } from "../src/runner.js";
 import { SessionStore } from "../src/session.js";
@@ -8,6 +7,8 @@ import { createDefaultTools } from "../src/tools.js";
 import { ToolRegistry, createToolPolicyPipeline } from "../src/tool-policy.js";
 import { Workspace } from "../src/workspace.js";
 import { createTempWorkspace, type TempWorkspace } from "./helpers/temp-workspace.js";
+
+const coderAgent: AgentPreset = { name: "coder", systemPrompt: "code", enabledTools: ["read", "edit", "apply_patch", "bash"] };
 
 describe("Runner", () => {
   let temp: TempWorkspace | undefined;
@@ -31,7 +32,7 @@ describe("Runner", () => {
       provider: "openai",
       model: "gpt",
       modelClient: client,
-      agent: new AgentRegistry().resolve("coder"),
+      agent: coderAgent,
       session: store.create({ agent: "coder", provider: "openai", model: "gpt" }),
       toolRegistry: tools,
       toolPolicy: createToolPolicyPipeline(tools),
@@ -39,6 +40,7 @@ describe("Runner", () => {
       eventBus: new AgentEventBus(),
       workspace: new Workspace(temp.root),
       updateLatest: true,
+      maxToolTurns: 8,
     });
     expect(result.output).toBe("done");
     expect((await store.loadLatest()).messages.at(-1)).toEqual({ role: "assistant", content: "done" });
@@ -69,7 +71,7 @@ describe("Runner", () => {
       provider: "openai",
       model: "gpt",
       modelClient: client,
-      agent: new AgentRegistry().resolve("coder"),
+      agent: coderAgent,
       session: store.create({ agent: "coder", provider: "openai", model: "gpt" }),
       toolRegistry: tools,
       toolPolicy: createToolPolicyPipeline(tools),
@@ -77,6 +79,7 @@ describe("Runner", () => {
       eventBus: new AgentEventBus(),
       workspace: new Workspace(temp.root),
       updateLatest: true,
+      maxToolTurns: 8,
     });
     expect(result.output).toBe("read complete");
     expect((await store.loadLatest()).messages.some((message) => message.role === "tool")).toBe(true);

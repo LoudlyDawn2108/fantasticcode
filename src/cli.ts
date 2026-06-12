@@ -47,8 +47,12 @@ export function buildProgram(run: (request: RunRequest) => Promise<number>): Com
 }
 
 export async function main(argv = process.argv): Promise<number> {
-  const harness = createDefaultHarness({ debug: process.env.FANTASTICCODE_DEBUG === "1", console: true });
   const program = buildProgram(async (request) => {
+    const harness = createDefaultHarness({
+      workspaceRoot: request.workspaceRoot ?? process.cwd(),
+      debug: process.env.FANTASTICCODE_DEBUG === "1",
+      console: true,
+    });
     const result = await harness.run(request);
     if (result.error === undefined) {
       stdout.write(result.output === "" ? "\n" : `${result.output}\n`);

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { SessionStore } from "../src/session.js";
 import { createTempWorkspace, type TempWorkspace } from "./helpers/temp-workspace.js";
 
@@ -18,7 +18,7 @@ describe("SessionStore", () => {
     session.messages.push({ role: "user", content: "hello" });
     await store.save(session, { updateLatest: true });
     expect((await store.loadLatest()).id).toBe(session.id);
-    expect(JSON.parse(await readFile(store.latestPath, "utf8"))).toEqual({ sessionId: session.id });
+    expect(existsSync(store.dbPath)).toBe(true);
   });
 
   it("forks a session with a new id and parent", async () => {

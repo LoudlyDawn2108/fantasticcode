@@ -1,19 +1,27 @@
 import type { HarnessSettings, RunRequest, RunResult } from "./contracts.js";
 import { createRunner } from "./construction.js";
+import { loadRuntimeConfig } from "./config.js";
 import { PreflightPipeline, createPreflightContext } from "./preflight.js";
 
 export class AgentHarness {
   constructor(
-    private readonly settings: HarnessSettings,
+    settings: HarnessSettings,
     private readonly preflight = new PreflightPipeline(),
     private readonly runner = createRunner(),
-  ) {}
+  ) {
+    this.settings = loadRuntimeConfig({ workspaceRoot: settings.workspaceRoot, overrides: settings });
+  }
+
+  private readonly settings: HarnessSettings;
 
   async run(request: RunRequest): Promise<RunResult> {
     const contextInput = {
       request,
       workspaceRoot: request.workspaceRoot ?? this.settings.workspaceRoot,
       ...(this.settings.providers === undefined ? {} : { providers: this.settings.providers }),
+      agentPresets: this.settings.agentPresets ?? [],
+      ...(this.settings.defaults === undefined ? {} : { defaults: this.settings.defaults }),
+      runner: this.settings.runner ?? { maxToolTurns: 8 },
       ...(this.settings.debug === undefined ? {} : { debug: this.settings.debug }),
       ...(this.settings.console === undefined ? {} : { console: this.settings.console }),
     };

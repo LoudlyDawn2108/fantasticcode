@@ -1,6 +1,6 @@
 # fantasticcode
 
-`fantasticcode` is a scriptable TypeScript CLI agent harness. It accepts command-line flags, calls OpenAI-compatible chat completion endpoints, executes a small workspace-safe toolset, and persists resumable sessions under `.fantasticcode/sessions/`.
+`fantasticcode` is a scriptable TypeScript CLI agent harness. It accepts command-line flags, calls model providers through SDK-backed adapters, executes a small workspace-safe toolset, and persists resumable sessions in `.fantasticcode/state.sqlite`.
 
 ## Install
 
@@ -21,16 +21,61 @@ fantasticcode --session sess_123 --fork --prompt "try another approach"
 fantasticcode --agent reviewer --model openai/gpt-4.1 --prompt "review the repo"
 ```
 
-If `--prompt` is omitted, piped stdin is used. New sessions require `--model provider/model`; continued sessions can reuse the stored provider and model.
+If `--prompt` is omitted, piped stdin is used. New sessions use `--model provider/model` or the configured default model; continued sessions can reuse the stored provider and model.
+
+## Configuration
+
+The harness loads user-editable JSON config in this order:
+
+```text
+built-in defaults
+  -> agent-harness.config.json
+  -> agent-harness.local.json
+  -> CLI/runtime overrides
+```
+
+`agent-harness.config.json` is intended for shared provider, model, runner, and agent settings. `agent-harness.local.json` is for private API keys and local overrides.
+
+Agents use JSON metadata plus Markdown prompt bodies:
+
+```json
+{
+  "version": 1,
+  "defaults": { "model": "openai/gpt-4.1", "agent": "coder" },
+  "providers": {
+    "openai": {
+      "sdk": "openai",
+      "baseUrl": "https://api.openai.com/v1",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "defaultModel": "gpt-4.1"
+    }
+  },
+  "agents": {
+    "coder": {
+      "promptFile": "./agents/coder.md",
+      "enabledTools": ["read", "edit", "apply_patch", "bash"]
+    },
+    "reviewer": {
+      "extends": "coder",
+      "promptFile": "./agents/reviewer.md",
+      "enabledTools": ["read", "bash"]
+    }
+  },
+  "runner": { "maxToolTurns": 8 }
+}
+```
 
 ## Providers
 
-Built-in providers are OpenAI-compatible HTTP adapters:
+Built-in providers use official SDK adapters where available:
 
-| Provider | Base URL env override | API key env |
+| Provider | SDK | Base URL env override | API key env |
 |---|---|---|
-| `openai` | `FANTASTICCODE_OPENAI_BASE_URL` | `OPENAI_API_KEY` |
-| `openrouter` | `FANTASTICCODE_OPENROUTER_BASE_URL` | `OPENROUTER_API_KEY` |
+| `openai` | OpenAI SDK | `FANTASTICCODE_OPENAI_BASE_URL` | `OPENAI_API_KEY` |
+| `anthropic` | Anthropic SDK | `FANTASTICCODE_ANTHROPIC_BASE_URL` | `ANTHROPIC_API_KEY` |
+| `openrouter` | OpenAI SDK-compatible | `FANTASTICCODE_OPENROUTER_BASE_URL` | `OPENROUTER_API_KEY` |
+
+Anthropic requests also read `FANTASTICCODE_ANTHROPIC_MAX_TOKENS` when set; otherwise the adapter uses `4096`.
 
 ## Tools
 
