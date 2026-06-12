@@ -40,6 +40,7 @@ export function buildProgram(run: (request: RunRequest) => Promise<number>): Com
         ...(options.session === undefined ? {} : { sessionId: options.session }),
         ...(options.fork === true ? { fork: true } : {}),
         ...(options.workspace === undefined ? {} : { workspaceRoot: options.workspace }),
+        ...(options.debug === true ? { debug: true } : {}),
       };
       process.exitCode = await run(request);
     });

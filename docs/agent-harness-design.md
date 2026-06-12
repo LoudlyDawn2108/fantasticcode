@@ -56,7 +56,7 @@ AgentHarness facade
    |
    +-- ProviderRegistry ---- ProviderFactory ---- ProviderAdapter ---- provider implementation
    |
-   +-- AgentRegistry ------- AgentStrategy
+   +-- AgentRegistry ------- agent preset selector
    |
    +-- SessionStore -------- Session mementos
    |
@@ -71,7 +71,7 @@ AgentHarness facade
    |
    +-- RunnerStateMachine --- runner lifecycle states
    |
-   +-- AgentEventBus -------- console, transcript, telemetry sinks
+   +-- AgentEventBus -------- console, transcript, debug sinks
    |
    v
 Runner loop
@@ -89,18 +89,18 @@ Runner loop
 |---|---|---|
 | `cli` | Parse flags and build a run request. | None directly; flags are configuration inputs. |
 | `AgentHarness` | Coordinate provider, session, agent, tools, and runner. | Facade |
-| `ProviderRegistry` | Resolve `provider/model` into provider config. | Strategy |
-| `ProviderFactory` | Create provider adapters from provider config. | Factory Method |
+| `ProviderRegistry` | Resolve `provider/model` into provider config. | Runtime selector/registry |
+| `ProviderFactory` | Create provider adapters from provider config. | Factory Method-style boundary |
 | `ProviderAdapter` | Normalize OpenAI-compatible endpoints or custom SDKs into one internal interface. | Adapter |
-| `AgentRegistry` | Select an agent preset by name. | Strategy |
-| `SessionStore` | Save, load, continue, and fork session snapshots. | Memento, Prototype |
+| `AgentRegistry` | Select an agent preset by name. | Runtime selector/registry |
+| `SessionStore` | Save, load, load latest, and fork session snapshots. | Memento, Prototype |
 | `ToolRegistry` | Register and look up executable tools. | Command |
 | `PreflightPipeline` | Validate run requests before the runner starts. | Chain of Responsibility |
 | `ToolPolicyPipeline` | Validate and authorize tool calls before execution. | Chain of Responsibility |
 | `RunnerStateMachine` | Own legal runner lifecycle transitions. | State |
 | `AgentEventBus` | Publish run, model, tool, and session events to subscribers. | Observer |
 | `Runner` | Drive model calls and tool execution until completion. | Coordinates the state machine, event bus, and registered patterns. |
-| `Workspace` | Restrict file and process access to the project workspace. | None directly; it is a safety boundary. |
+| `Workspace` | Restrict file paths and file operations to the project workspace; process risk is handled by tool policy. | None directly; it is a safety boundary. |
 
 ## Implemented GoF Patterns (v1)
 
@@ -139,15 +139,15 @@ Avoid overuse: do not put all logic inside `AgentHarness`. It should coordinate 
 
 Intent: define a family of interchangeable behaviors and select one at runtime.
 
-Strategies in this harness:
+The full GoF Strategy in this harness is session selection. Provider and agent resolution are runtime selectors/registries that support configurable behavior, but they are not counted as full Strategy objects.
 
-| Strategy family | Selected by | Examples |
+| Runtime choice | Selected by | Examples |
 |---|---|---|
-| Provider strategy | `--model provider/model` | `openai`, `openrouter`, `local` |
-| Agent strategy | `--agent` | `coder`, `reviewer`, `explainer` |
-| Session selection strategy | `--continue`, `--session`, new run | latest session, named session, new session |
+| Session selection strategy | `--continue`, `--session`, new run, `--fork` | latest session, named session, new session, forked session |
+| Provider selector/registry | `--model provider/model` | `openai`, `openrouter`, future providers |
+| Agent selector/registry | `--agent` | `coder`, `reviewer`, future presets |
 
-Provider selection is Strategy because different providers can implement the same internal model interface:
+Provider selection stays separate from Strategy because the registry resolves config, while provider adapters implement the internal model interface:
 
 ```ts
 interface ModelClient {
@@ -155,7 +155,7 @@ interface ModelClient {
 }
 ```
 
-Agent selection is Strategy because different agents can share the runner while changing instructions, enabled tools, and limits:
+Agent selection is also a registry lookup. Agent presets share the runner while changing instructions, enabled tools, and limits:
 
 ```ts
 type AgentPreset = {
@@ -166,7 +166,7 @@ type AgentPreset = {
 }
 ```
 
-Avoid overuse: CLI flags themselves are not strategies. The strategy is the runtime behavior selected by the flag.
+Avoid overuse: CLI flags themselves are not strategies. In v1, the Strategy claim is strongest for session selection; provider and agent are runtime selectors.
 
 ### Adapter
 
@@ -283,7 +283,7 @@ Avoid overuse: define clone boundaries clearly. Clone message state and metadata
 
 Intent: let subclasses or provider-specific factories decide which concrete object to create while callers depend on interfaces.
 
-In this harness, Factory Method is used for construction boundaries that vary by config. The registry resolves names; factories create concrete implementations.
+In this harness, Factory Method-style construction is used at the provider boundary. The registry resolves names; provider-specific factories create concrete `ModelClient` implementations.
 
 ```ts
 interface ProviderFactory {
@@ -291,16 +291,13 @@ interface ProviderFactory {
   create(config: ProviderConfig): ModelClient
 }
 
-function createSessionStore(config: Settings): SessionStore
-function createToolRegistry(config: Settings): ToolRegistry
-function createRunner(config: RunnerConfig): Runner
 ```
 
 Why it fits:
 
 - Provider creation differs between OpenAI-compatible HTTP endpoints and custom SDKs.
 - Tests can replace factories with in-memory implementations.
-- Construction stays at the composition boundary instead of spreading through the runner.
+- Provider construction stays at the composition boundary instead of spreading through the runner.
 
 Avoid overuse: a single `switch` hidden inside a helper is a simple factory, not a meaningful Factory Method. Count this pattern only where provider-specific factories create interface implementations.
 
@@ -352,7 +349,7 @@ Avoid overuse: a plain list of function calls is just a pipeline. This pattern i
 
 Intent: let multiple subscribers react to object events without coupling the event source to the subscribers.
 
-The runner publishes typed lifecycle events. Subscribers handle console output, transcript writing, debug logs, and future telemetry or streaming.
+The runner publishes typed lifecycle events. Subscribers handle console output, transcript writing, and debug logs; telemetry or streaming can be added later as extra observers.
 
 ```ts
 type AgentEvent =
@@ -369,10 +366,10 @@ Event subscribers:
 
 | Subscriber | Responsibility |
 |---|---|
-| `ConsoleSink` | Render final output and optional streaming tokens. |
-| `TranscriptSink` | Append readable run history. |
+| `ConsoleSink` | Render run progress to stderr without mixing with final stdout. |
+| `TranscriptSink` | Append structured run history. |
 | `DebugLogSink` | Write structured debug logs. |
-| `TelemetrySink` | Record future metrics or traces. |
+| Future telemetry sink | Record future metrics or traces if v2 needs it. |
 
 Why it fits:
 
@@ -640,19 +637,19 @@ The `bash` tool should have the strictest policy:
 13. Move to completed or failed and return the final result.
 ```
 
-This flow keeps the runner deterministic while using the v1 patterns deliberately: Strategy chooses runtime behavior, Adapter normalizes providers, Command executes tools, Memento and Prototype manage sessions, Chain of Responsibility owns validation and policy gates, Observer publishes lifecycle events, and State owns legal runner transitions.
+This flow keeps the runner deterministic while using the v1 patterns deliberately: Strategy owns session selection, runtime registries select provider/agent configuration, Adapter normalizes providers, Command executes tools, Memento and Prototype manage sessions, Chain of Responsibility owns validation and policy gates, Observer publishes lifecycle events, and State owns legal runner transitions.
 
 ## Pattern Summary
 
 | Pattern | v1 status | Harness location |
 |---|---|---|
 | Facade | Implemented | `AgentHarness` |
-| Strategy | Implemented | provider selection, agent preset, session selection |
-| Adapter | Implemented | OpenAI-compatible and custom-SDK provider adapters |
+| Strategy | Implemented | session selection |
+| Adapter | Implemented | OpenAI-compatible provider adapter; custom-SDK adapters are extension points |
 | Command | Implemented | `read`, `edit`, `apply_patch`, `bash`, and future tools |
 | Memento | Implemented | session snapshots |
 | Prototype | Implemented | `--fork` session cloning |
-| Factory Method | Implemented | provider, session store, tool registry, and runner creation |
+| Factory Method | Implemented | provider factory boundary |
 | Chain of Responsibility | Implemented | `PreflightPipeline` and `ToolPolicyPipeline` |
 | Observer | Implemented | `AgentEventBus` and event sinks |
 | State | Implemented | `RunnerStateMachine` lifecycle transitions |
@@ -674,7 +671,7 @@ This flow keeps the runner deterministic while using the v1 patterns deliberatel
 1. Create the CLI parser and `RunRequest` type.
 2. Create `AgentHarness.run(request)` as the facade.
 3. Add provider registry, provider factories, and one OpenAI-compatible adapter.
-4. Add JSON-backed `SessionStore` with create, continue, load, fork, and save.
+4. Add JSON-backed `SessionStore` with create, save, load, load-latest, and fork.
 5. Add `AgentRegistry` with a default `coder` agent.
 6. Add `ToolRegistry` and implement `read`, `edit`, `apply_patch`, and `bash` as commands.
 7. Add `PreflightPipeline` and `ToolPolicyPipeline` handlers.

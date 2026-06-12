@@ -10,11 +10,12 @@ export class AgentHarness {
   ) {}
 
   async run(request: RunRequest): Promise<RunResult> {
+    const debug = request.debug ?? this.settings.debug;
     const contextInput = {
       request,
       workspaceRoot: request.workspaceRoot ?? this.settings.workspaceRoot,
       ...(this.settings.providers === undefined ? {} : { providers: this.settings.providers }),
-      ...(this.settings.debug === undefined ? {} : { debug: this.settings.debug }),
+      ...(debug === undefined ? {} : { debug }),
       ...(this.settings.console === undefined ? {} : { console: this.settings.console }),
     };
     const prepared = await this.preflight.prepare(
