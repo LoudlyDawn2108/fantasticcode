@@ -643,10 +643,12 @@ flowchart TD
   E -- Có --> F[Parse JSON arguments]
   F --> G{Arguments hợp lệ schema?}
   G -- Không --> X
-  G -- Có --> H[Thực thi tool trong workspace]
-  H --> I[Append tool result vào history]
-  I --> J[Runner gọi model tiếp]
-  X --> J
+  G -- Có --> H[Kiểm tra sandbox workspace]
+  H --> K[Kiểm tra risk policy]
+  K --> I[Thực thi tool trong workspace]
+  I --> J[Append tool result vào history]
+  J --> L[Runner gọi model tiếp]
+  X --> L
 ```
 
 ## **3. Biểu đồ tuần tự**
@@ -772,6 +774,7 @@ sequenceDiagram
   TP->>TR: lookup(tool)
   TP->>TP: kiểm tra tool được phép
   TP->>TP: parse và validate args
+  TP->>TP: kiểm tra workspace sandbox và risk policy
   TP->>T: execute(workspace, args)
   T->>W: đọc, ghi hoặc chạy lệnh
   alt Tool hợp lệ
@@ -796,7 +799,7 @@ sequenceDiagram
 | `OpenAICompatibleAdapter` | Chuẩn hóa HTTP API tương thích OpenAI thành interface nội bộ | Adapter |
 | `AgentRegistry` | Chọn agent preset như `coder` hoặc `reviewer` | Strategy |
 | `ToolRegistry` | Đăng ký và tra cứu tool callable | Command registry |
-| `ToolPolicyPipeline` | Lookup, kiểm tra tool được phép, validate schema, execute tool | Chain of Responsibility |
+| `ToolPolicyPipeline` | Lookup, kiểm tra tool được phép, validate schema, áp dụng workspace sandbox, áp dụng risk policy, execute tool | Chain of Responsibility |
 | `ReadTool`, `EditTool`, `ApplyPatchTool`, `BashTool` | Thực thi các hành động agentic trong workspace | Command |
 | `RunnerStateMachine` | Quản lý trạng thái hợp lệ của runner | State |
 | `Runner` | Điều phối model call, tool call, persistence và event | Điều phối các pattern |
@@ -804,7 +807,149 @@ sequenceDiagram
 | `AgentEventBus` | Phát sự kiện tới transcript/debug/console sinks | Observer |
 | `Workspace` | Giới hạn file/process trong workspace | Safety boundary |
 
-### **4.1. State machine của runner**
+### **4.1. Phân tích chi tiết các mẫu thiết kế GoF**
+
+Phần này là trọng tâm thiết kế của FantasticCode. Nhóm không chỉ liệt kê tên mẫu thiết kế, mà gắn từng mẫu với một trách nhiệm thật trong hệ thống. Tiêu chí đánh giá của nhóm là: mỗi pattern phải giải quyết một vấn đề kiến trúc cụ thể, có interface/class rõ ràng trong mã nguồn, có khả năng kiểm thử và không biến thành "pattern theatre". Các mẫu được triển khai tập trung trong `src/`, còn `docs/agent-harness-design.md` là tài liệu thiết kế gốc dùng để đối chiếu.
+
+#### **4.1.1. Tổng quan phân công Design Pattern**
+
+| **Pattern** | **Thành viên phụ trách** | **File/Class chính** | **Vai trò trong hệ thống** | **Đánh giá** |
+| --- | --- | --- | --- | --- |
+| Facade | Nguyễn Hồng Phúc | `src/harness.ts` - `AgentHarness` | Cung cấp một cổng vào đơn giản cho CLI, che giấu preflight, runner, provider, session và tool subsystem. | Đạt |
+| Strategy | Nguyễn Hồng Phúc | `src/session-selection.ts`, `src/provider.ts`, `src/agent.ts` | Chọn runtime behavior cho session, provider và agent preset. | Đạt |
+| Adapter | Ngô Quang Tùng | `src/provider.ts` - `OpenAICompatibleAdapter` | Chuyển đổi OpenAI-compatible HTTP API sang `ModelClient` nội bộ. | Đạt |
+| Factory Method | Ngô Quang Tùng | `ProviderFactory`, `OpenAICompatibleProviderFactory`, `ProviderFactoryRegistry` | Tạo `ModelClient` phù hợp với provider mà caller chỉ phụ thuộc interface. | Đạt, cần trình bày đúng phạm vi |
+| Command | Nguyễn Hải Ninh | `ToolCommand`, `ReadTool`, `EditTool`, `ApplyPatchTool`, `BashTool` | Đóng gói tool call thành object có schema và `execute()`. | Đạt |
+| Chain of Responsibility | Nguyễn Hải Ninh | `PreflightPipeline`, `ToolPolicyPipeline` | Chạy request/tool call qua chuỗi handler có thể delegate hoặc dừng sớm. | Đạt sau hardening |
+| Memento | Ngô Đức Nam Khánh | `SessionStore`, `Session` | Lưu snapshot session để restore qua `--continue` hoặc `--session`. | Đạt |
+| Prototype | Ngô Đức Nam Khánh | `SessionStore.fork()` | Clone session nguồn thành session mới có lineage. | Đạt |
+| Observer | Hoàng Tùng | `AgentEventBus`, `ConsoleSink`, `TranscriptSink`, `DebugLogSink` | Phát event tới nhiều sink mà runner không phụ thuộc trực tiếp vào sink. | Đạt sau cô lập lỗi observer |
+| State | Hoàng Tùng | `RunnerStateMachine` và các state class | Kiểm soát lifecycle runner bằng state object và transition hợp lệ. | Đạt |
+
+#### **4.1.2. Facade - `AgentHarness`**
+
+**Mục đích GoF:** Facade cung cấp một interface đơn giản cho một tập subsystem phức tạp. Thay vì để CLI biết chi tiết cách chọn session, resolve provider, authorize tool và chạy runner, hệ thống gom điểm vào qua `AgentHarness.run(request)`.
+
+**Triển khai trong FantasticCode:** `AgentHarness` nằm tại `src/harness.ts`. Class này nhận `HarnessSettings`, `PreflightPipeline` và `Runner`, sau đó public method duy nhất là `run(request: RunRequest): Promise<RunResult>`. Trong method này, harness tạo input context, gọi `preflight.prepare(createPreflightContext(...))`, rồi chuyển kết quả đã chuẩn bị cho `runner.run(prepared)`. CLI ở `src/cli.ts` chỉ cần tạo `RunRequest` từ flags/stdin và gọi facade, không tự gọi `SessionStore`, `ProviderRegistry`, `ToolPolicyPipeline` hay `RunnerStateMachine`.
+
+**Vì sao đúng Facade:** Facade ở đây làm nhiệm vụ điều phối, không chứa business logic chi tiết. Logic validate request nằm trong `PreflightPipeline`, logic model/tool loop nằm trong `Runner`, logic lưu session nằm trong `SessionStore`, logic provider nằm trong `provider.ts`. Do đó `AgentHarness` không trở thành god object. Nếu sau này thay đổi cách preflight hoặc runner hoạt động, CLI vẫn giữ contract đơn giản là `harness.run(request)`.
+
+**Lưu ý khi báo cáo:** Nên nhấn mạnh Facade không phải là "class lớn chứa mọi thứ". Điểm tốt của FantasticCode là Facade mỏng, chỉ che giấu độ phức tạp subsystem và giữ CLI scriptable.
+
+#### **4.1.3. Strategy - lựa chọn provider, agent và session**
+
+**Mục đích GoF:** Strategy định nghĩa một họ thuật toán/hành vi có thể thay thế cho nhau và chọn tại runtime. Trong FantasticCode, Strategy xuất hiện ở ba nhóm: session selection, provider selection và agent selection.
+
+**Session selection strategy:** File `src/session-selection.ts` định nghĩa interface `SessionSelectionStrategy` với method `select(input)`. Các concrete strategy gồm `NewSessionSelectionStrategy`, `ContinueLatestSessionStrategy`, `LoadByIdSessionStrategy` và `ForkingSessionSelectionStrategy`. `SessionSelectionStrategyResolver.resolve(request)` chọn strategy dựa trên flags: không có session thì tạo mới, `--continue` thì load latest, `--session` thì load theo ID, còn `--fork` bọc strategy nguồn bằng `ForkingSessionSelectionStrategy`.
+
+**Provider strategy:** `ProviderRegistry.resolve(selector, env)` chọn provider config dựa trên `provider/model`. Các provider như `openai` và `openrouter` có cùng contract nội bộ nhưng khác base URL, API key env và cấu hình. Runner không cần biết provider nào được chọn, vì sau preflight nó chỉ nhận `ModelClient`.
+
+**Agent strategy:** `AgentRegistry.resolve(name)` chọn `AgentPreset`. Mỗi preset như `coder` hoặc `reviewer` thay đổi system prompt, danh sách tool được phép và `maxToolTurns`. Runner dùng cùng một vòng lặp, nhưng hành vi agent thay đổi theo preset đã chọn.
+
+**Vì sao đúng Strategy:** Hành vi sau flag mới là strategy, không phải bản thân CLI flag. `--continue`, `--session`, `--fork`, `--agent`, `--model` chỉ là input cấu hình; các class registry/strategy mới là nơi hiện thực runtime behavior. Thiết kế này giúp thêm strategy mới mà không phải sửa luồng runner chính.
+
+#### **4.1.4. Adapter - `OpenAICompatibleAdapter`**
+
+**Mục đích GoF:** Adapter chuyển đổi interface của một hệ thống bên ngoài sang interface mà client nội bộ mong muốn. FantasticCode cần gọi endpoint chat completion tương thích OpenAI, nhưng runner không nên phụ thuộc trực tiếp vào wire format của provider.
+
+**Triển khai trong FantasticCode:** `OpenAICompatibleAdapter` trong `src/provider.ts` implement `ModelClient`. Method `complete(request: ModelRequest)` nhận request nội bộ, chuyển `ModelMessage` sang provider message bằng `toProviderMessage()`, gửi HTTP request tới `/chat/completions`, đọc JSON response và chuẩn hóa bằng `normalizeChatCompletion()`. Các hàm `normalizeToolCalls()` và `normalizeUsage()` chuyển `tool_calls`, `finish_reason`, token usage và text về `ModelResponse` nội bộ.
+
+**Vì sao đúng Adapter:** Provider-specific details như header `authorization`, endpoint path, OpenAI message role, `tool_calls`, `tool_call_id`, `finish_reason` chỉ tồn tại trong adapter. `Runner` chỉ gọi `modelClient.complete()` và xử lý `response.text`, `response.toolCalls`, `response.finishReason`, không biết response gốc của OpenAI/OpenRouter ra sao. Như vậy provider boundary được cô lập rõ.
+
+**Lưu ý khi báo cáo:** Trong phiên bản hiện tại, adapter tích hợp sẵn là OpenAI-compatible. Tài liệu có thể nói kiến trúc cho phép thêm adapter khác, nhưng không nên khẳng định đã có Anthropic/Gemini SDK nếu source chưa triển khai.
+
+#### **4.1.5. Factory Method - `ProviderFactory` và registry tạo `ModelClient`**
+
+**Mục đích GoF:** Factory Method để phần tạo object cụ thể nằm sau một interface/factory, giúp caller không phụ thuộc vào constructor cụ thể.
+
+**Triển khai trong FantasticCode:** `src/provider.ts` định nghĩa interface `ProviderFactory` gồm `supports(provider: string)` và `create(resolved: ResolvedProvider): ModelClient`. `OpenAICompatibleProviderFactory` là concrete factory, kiểm tra provider `openai` hoặc `openrouter` và tạo `OpenAICompatibleAdapter`. `ProviderFactoryRegistry.create(resolved)` duyệt danh sách factory, chọn factory hỗ trợ provider hiện tại, rồi gọi `factory.create(resolved)`.
+
+**Vì sao đúng Factory Method:** Preflight chỉ cần yêu cầu tạo `ModelClient` thông qua `ProviderFactoryRegistry`, không cần biết constructor `OpenAICompatibleAdapter`. Khi thêm provider mới có SDK riêng, nhóm có thể thêm một concrete factory mới implement `ProviderFactory` mà không sửa runner. Đây là điểm "method tạo object" có ý nghĩa kiến trúc thật.
+
+**Phân biệt với simple factory:** Các hàm trong `src/construction.ts` như `createSessionStore()`, `createToolRegistry()`, `createRunner()` và `createEventBus()` là helper lắp ráp dependency ở composition boundary. Chúng hữu ích nhưng không nên lấy làm ví dụ chính cho Factory Method, vì chúng chủ yếu là simple factory function. Trong báo cáo, phần Factory Method nên tập trung vào `ProviderFactory`, `OpenAICompatibleProviderFactory` và `ProviderFactoryRegistry`.
+
+#### **4.1.6. Command - `ToolCommand` và các tool cụ thể**
+
+**Mục đích GoF:** Command đóng gói một yêu cầu thành object để có thể validate, log, authorize và execute theo một cách thống nhất.
+
+**Triển khai trong FantasticCode:** Interface `ToolCommand` trong `src/contracts.ts` gồm `name`, `description`, `schema` và `execute(ctx, input)`. Bốn concrete command trong `src/tools.ts` là `ReadTool`, `EditTool`, `ApplyPatchTool` và `BashTool`. Mỗi tool tự mô tả schema JSON, nhận `ToolContext` có `Workspace`, rồi trả kết quả dạng object/string.
+
+**Luồng thực thi:** Model trả về tool call; runner chuyển tool call vào `ToolPolicyPipeline`; pipeline lookup command, kiểm tra tool có được agent cho phép không, parse JSON arguments, validate schema, enforce sandbox/risk policy rồi mới gọi `tool.execute(...)`. Kết quả được bọc thành `ToolResultEnvelope` để runner append vào session message history.
+
+**Vì sao đúng Command:** Các hành động agentic được object hóa thay vì viết thành helper rời rạc. Điều này giúp mọi tool đi qua cùng policy, cùng logging/event, cùng schema validation và cùng envelope kết quả. Pattern này không bị lạm dụng vì chỉ những hành động model-callable mới là Command; các helper nội bộ như parse patch hoặc normalize response không bị gắn nhãn Command.
+
+#### **4.1.7. Chain of Responsibility - `PreflightPipeline` và `ToolPolicyPipeline`**
+
+**Mục đích GoF:** Chain of Responsibility truyền request qua chuỗi handler. Mỗi handler có thể xử lý một phần, biến đổi context, gọi `next()` để chuyển tiếp hoặc dừng chuỗi bằng lỗi có cấu trúc.
+
+**Preflight chain:** `src/preflight.ts` dùng các handler như `RequestValidationHandler`, `SessionSelectionHandler`, `AgentResolutionHandler`, `ProviderResolutionHandler` và `ToolAuthorizationHandler`. Thứ tự này có ý nghĩa: validate prompt/flag trước, chọn session, resolve agent, resolve provider/model, sau đó mới authorize tools. Nếu prompt rỗng, session flag mơ hồ, provider thiếu API key hoặc tool không hợp lệ, handler sẽ throw `HarnessError` trước khi runner chạy.
+
+**Tool policy chain:** `src/tool-policy.ts` dùng chuỗi handler: `ToolLookupHandler -> EnabledToolHandler -> ToolArgsHandler -> WorkspaceSandboxHandler -> RiskPolicyHandler -> ToolExecutionHandler`. Chuỗi này thể hiện đúng policy trước execution: lookup tool, kiểm tra quyền agent, parse/validate schema, kiểm tra đường dẫn workspace, chặn lệnh bash nguy hiểm, sau đó mới execute command và chuẩn hóa output.
+
+**Vì sao đúng Chain of Responsibility:** Các handler có chung interface `handle(input, next)` và thứ tự policy rõ ràng, testable. `WorkspaceSandboxHandler` có thể short-circuit khi path ra ngoài workspace; `RiskPolicyHandler` có thể short-circuit lệnh như `rm -r -f`, `sh -c 'rm -rf .'`, `git reset --hard` hoặc `format /q C:` trước khi `BashTool` được gọi. Đây không chỉ là một danh sách function call, vì mỗi handler nhận quyền quyết định delegate hoặc dừng chuỗi.
+
+**Giá trị sau hardening:** Phiên bản hiện tại đã đưa sandbox/risk policy vào đúng chain thay vì để policy nằm lẫn trong tool implementation. Schema validation cũng kiểm tra đủ `string`, `number`, `boolean`, `object`, `array`, required fields, unknown fields và min/max number.
+
+#### **4.1.8. Memento - `SessionStore` và session JSON**
+
+**Mục đích GoF:** Memento lưu lại trạng thái của một object để có thể khôi phục sau này mà không làm lộ chi tiết runtime bên trong object đó.
+
+**Triển khai trong FantasticCode:** `Session` là snapshot bền vững của conversation. `SessionStore.create()` tạo session mới; `load(id)` khôi phục session theo ID; `loadLatest()` đọc `latest.json`; `save(session, { updateLatest })` ghi session bằng atomic write. Session chứa `version`, `id`, `parentSessionId`, `agent`, `provider`, `model`, `createdAt`, `updatedAt`, `messages` và `metadata`.
+
+**Vì sao đúng Memento:** Session JSON lưu đủ thông tin để runner tiếp tục hội thoại qua `--continue` hoặc `--session`, nhưng không lưu live runtime object như socket, process, fetch client hay file handle. Runner có thể thay đổi implementation mà session schema vẫn là memento độc lập. `validateSession()` kiểm tra schema version và các field cốt lõi trước khi load.
+
+**Điểm an toàn dữ liệu:** `SessionStore.save()` ghi file tạm rồi rename, giúp giảm nguy cơ session hỏng khi đang ghi. `latest.json` chỉ là pointer `{ sessionId }`, không copy toàn bộ session.
+
+#### **4.1.9. Prototype - fork session bằng `SessionStore.fork()`**
+
+**Mục đích GoF:** Prototype tạo object mới bằng cách clone một object đã có, đặc biệt hữu ích khi object nguồn có trạng thái phức tạp.
+
+**Triển khai trong FantasticCode:** Khi người dùng dùng `--fork`, `ForkingSessionSelectionStrategy` chọn session nguồn rồi gọi `SessionStore.fork(source)`. Method này tạo session ID mới, set `parentSessionId` bằng ID session nguồn, giữ agent/provider/model, tạo timestamp mới và deep-copy `messages` cùng `metadata` bằng `structuredClone()`.
+
+**Vì sao đúng Prototype:** Fork session không tạo session rỗng; nó clone context hội thoại hiện có để người dùng thử hướng xử lý khác từ cùng một trạng thái ban đầu. Clone boundary rõ ràng: chỉ clone dữ liệu serializable của session, không clone transient runtime resources. Lineage `parentSessionId` giúp truy vết nhánh session trong báo cáo/test.
+
+#### **4.1.10. Observer - `AgentEventBus` và các sink**
+
+**Mục đích GoF:** Observer cho phép nhiều subscriber phản ứng với event mà event source không cần biết cụ thể subscriber là ai.
+
+**Triển khai trong FantasticCode:** `AgentEventBus` trong `src/events.ts` quản lý danh sách handler bằng `subscribe(handler)` và phát event bằng `publish(event)`. Các observer/sink gồm `ConsoleSink`, `TranscriptSink` và `DebugLogSink`. Runner phát các event như `run:started`, `model:response`, `tool:started`, `tool:completed`, `session:saved`, `run:completed`, `run:failed`.
+
+**Vì sao đúng Observer:** Runner không gọi trực tiếp `appendFile()` cho transcript hoặc debug log; runner chỉ publish event. Sink quyết định cách xử lý event: console ghi stderr, transcript/debug ghi NDJSON trong `.fantasticcode/`. Event bus không phải Singleton bắt buộc; nó được tạo và truyền qua composition, giúp test dễ thay thế.
+
+**Điểm chất lượng:** `AgentEventBus.publish()` hiện bắt lỗi từng handler và gọi error handler riêng. Vì vậy một observer bị lỗi không chặn các observer khác và không làm hỏng core runner state. Observers chỉ làm side effect ghi log/console, không mutate session hoặc runner state.
+
+#### **4.1.11. State - `RunnerStateMachine`**
+
+**Mục đích GoF:** State biểu diễn trạng thái thành object riêng, để hành vi/chuyển tiếp hợp lệ phụ thuộc vào state hiện tại thay vì chỉ dùng enum và switch rải rác.
+
+**Triển khai trong FantasticCode:** `src/state-machine.ts` định nghĩa interface `RunnerState` với `name`, `enter(ctx)` và `transitionTo(next)`. Các state class cụ thể gồm `InitializedState`, `ResolvingState`, `RunningState`, `WaitingForToolState`, `PersistingState`, `CompletedState` và `FailedState`. `RunnerStateMachine.transitionTo(next)` ủy quyền cho state hiện tại quyết định transition có hợp lệ không.
+
+**Luật chuyển trạng thái:**
+
+```text
+initialized -> resolving
+resolving -> running | failed
+running -> waitingForTool | persisting | failed
+waitingForTool -> running | failed
+persisting -> completed | failed
+completed -> none
+failed -> none
+```
+
+**Vì sao đúng State:** Mỗi state class tự validate transition của mình. `completed` và `failed` là terminal states, mọi transition tiếp đều bị reject bằng `HarnessError`. Đây không phải là string enum đơn giản; behavior kiểm soát transition nằm sau các state object. Runner sử dụng state machine để ghi lại history lifecycle và tránh những luồng không hợp lệ như chạy tool sau khi đã completed.
+
+#### **4.1.12. Kết luận phần Design Pattern**
+
+FantasticCode đáp ứng mục tiêu môn học vì 10 mẫu GoF đều gắn với trách nhiệm thật trong kiến trúc:
+
+- Nhóm cấu trúc hệ thống dùng Facade, Strategy, Adapter và Factory Method để giảm coupling giữa CLI, provider, agent và runner.
+- Nhóm tool safety dùng Command và Chain of Responsibility để chuẩn hóa tool call, validation, sandbox và risk policy.
+- Nhóm session dùng Memento và Prototype để hỗ trợ continue/fork một cách có truy vết.
+- Nhóm runtime observability và lifecycle dùng Observer và State để tách logging/event khỏi runner và kiểm soát trạng thái hợp lệ.
+
+Điểm cần nhấn mạnh khi bảo vệ là nhóm không tính nhầm các helper thông thường thành pattern. Ví dụ, `construction.ts` có các hàm `createXxx()` hỗ trợ composition nhưng phần Factory Method chính nằm ở `ProviderFactory`. Tương tự, CLI flags không phải Strategy; Strategy là behavior được chọn bởi flags. Cách phân biệt này giúp báo cáo tránh "pattern theatre" và chứng minh rằng các mẫu thiết kế được áp dụng có mục đích kỹ thuật rõ ràng.
+
+### **4.2. State machine của runner**
 
 ```mermaid
 stateDiagram-v2
@@ -917,7 +1062,7 @@ Event log được ghi theo định dạng NDJSON, mỗi dòng là một event �
 ## **7. Ghi chú thiết kế an toàn**
 
 - Provider-specific request/response chỉ tồn tại trong adapter, không rò rỉ vào runner.
-- Tool call phải qua lookup, enabled-tool check và schema validation trước khi execute.
+- Tool call phải qua lookup, enabled-tool check, schema validation, workspace sandbox và risk policy trước khi execute.
 - `bash` đặt `GIT_TERMINAL_PROMPT=0` để tránh treo lệnh tương tác.
 - Lỗi có cấu trúc giúp CLI trả thông tin rõ ràng qua stderr.
 
@@ -974,7 +1119,7 @@ Quy trình kiểm thử được chuẩn hóa theo các bước:
 - Preflight validation, session selection, tool authorization.
 - Session store: create, load, latest, continue, fork, atomic write.
 - Built-in tools: `read`, `edit`, `apply_patch`, `bash`.
-- Tool policy pipeline: lookup, enabled check, schema validation, execute.
+- Tool policy pipeline: lookup, enabled check, schema validation, workspace sandbox, risk policy và execute.
 - Event bus, transcript/debug sinks và console sink.
 - Runner loop, max tool turns, save-on-success và save-on-failure.
 - Harness e2e flow.

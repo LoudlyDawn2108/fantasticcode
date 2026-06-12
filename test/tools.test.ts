@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
+import type { JsonObject, JsonSchema, ToolCommand } from "../src/contracts.js";
 import { createDefaultTools } from "../src/tools.js";
 import { ToolRegistry, createToolPolicyPipeline } from "../src/tool-policy.js";
 import { Workspace } from "../src/workspace.js";
@@ -59,13 +60,15 @@ describe("tools", () => {
 
   it("denies destructive bash commands", async () => {
     temp = await createTempWorkspace();
-    const result = await policy(temp.root).execute({
-      call: { id: "1", name: "bash", argumentsText: '{"command":"rm -rf ."}' },
-      enabledTools: ["bash"],
-      workspace: new Workspace(temp.root),
-    });
-    expect(result.success).toBe(false);
-    expect(result.error?.code).toBe("DESTRUCTIVE_COMMAND_DENIED");
+    for (const command of ["rm -r -f .", "sh -c 'rm -rf .'", "echo $(rm -rf .)", "format /q C:"]) {
+      const result = await policy(temp.root).execute({
+        call: { id: "1", name: "bash", argumentsText: JSON.stringify({ command }) },
+        enabledTools: ["bash"],
+        workspace: new Workspace(temp.root),
+      });
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe("DESTRUCTIVE_COMMAND_DENIED");
+    }
   });
 
   it("turns invalid provider tool JSON into a tool error", async () => {
@@ -78,7 +81,51 @@ describe("tools", () => {
     expect(result.success).toBe(false);
     expect(result.error?.code).toBe("INVALID_TOOL_ARGUMENTS");
   });
+
+  it("validates boolean object and array schema properties", async () => {
+    temp = await createTempWorkspace();
+    const registry = new ToolRegistry([new ComplexArgsTool()]);
+    const result = await createToolPolicyPipeline(registry).execute({
+      call: { id: "1", name: "complex_args", argumentsText: '{"flag":"yes","options":{},"items":[]}' },
+      enabledTools: ["complex_args"],
+      workspace: new Workspace(temp.root),
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.code).toBe("INVALID_TOOL_ARGUMENT");
+    expect(result.error?.message).toBe("flag must be a boolean");
+  });
+
+  it("rejects inherited names as unknown tool arguments", async () => {
+    temp = await createTempWorkspace();
+    await temp.write("README.md", "hello");
+    const result = await policy(temp.root).execute({
+      call: { id: "1", name: "read", argumentsText: '{"path":"README.md","toString":1}' },
+      enabledTools: ["read"],
+      workspace: new Workspace(temp.root),
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.code).toBe("UNKNOWN_TOOL_ARGUMENT");
+  });
 });
+
+class ComplexArgsTool implements ToolCommand {
+  readonly name = "complex_args";
+  readonly description = "Exercise non-string schema types.";
+  readonly schema: JsonSchema = {
+    type: "object",
+    properties: {
+      flag: { type: "boolean" },
+      options: { type: "object" },
+      items: { type: "array" },
+    },
+    required: ["flag", "options", "items"],
+    additionalProperties: false,
+  };
+
+  async execute(_ctx: unknown, _input: JsonObject): Promise<unknown> {
+    return { ok: true };
+  }
+}
 
 function policy(root: string) {
   void root;

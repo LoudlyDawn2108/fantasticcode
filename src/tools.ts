@@ -123,7 +123,6 @@ export class BashTool implements ToolCommand {
   async execute(ctx: ToolContext, input: JsonObject): Promise<unknown> {
     const command = getString(input, "command");
     const timeoutMs = getOptionalNumber(input, "timeoutMs") ?? 10000;
-    denyDestructiveCommand(command);
     return runBash(command, ctx.workspace.root, timeoutMs);
   }
 }
@@ -212,14 +211,6 @@ function parsePatch(patch: string): PatchOperation[] {
     throw new HarnessError("tool", "INVALID_PATCH", `unsupported patch line: ${line}`);
   }
   return operations;
-}
-
-function denyDestructiveCommand(command: string): void {
-  const compact = command.toLowerCase();
-  const denied = [/\brm\s+-rf\b/, /\bdel\s+\/s\b/, /\brmdir\s+\/s\b/, /git\s+reset\s+--hard/, /format\s+[a-z]:/];
-  if (denied.some((pattern) => pattern.test(compact))) {
-    throw new HarnessError("tool", "DESTRUCTIVE_COMMAND_DENIED", "command denied by risk policy");
-  }
 }
 
 async function runBash(command: string, cwd: string, timeoutMs: number): Promise<unknown> {

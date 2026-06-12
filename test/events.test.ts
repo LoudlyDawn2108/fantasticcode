@@ -33,4 +33,23 @@ describe("AgentEventBus", () => {
     expect(writes.join("")).toContain("sess_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     expect(writes.join("")).toContain("run completed");
   });
+
+  it("isolates observer failures and continues publishing", async () => {
+    const errors: string[] = [];
+    const seen: string[] = [];
+    const bus = new AgentEventBus((error) => {
+      errors.push(error instanceof Error ? error.message : String(error));
+    });
+    bus.subscribe(() => {
+      throw new Error("sink failed");
+    });
+    bus.subscribe((event) => {
+      seen.push(event.type);
+    });
+
+    await bus.publish({ type: "run:started", sessionId: "sess_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" });
+
+    expect(errors).toEqual(["sink failed"]);
+    expect(seen).toEqual(["run:started"]);
+  });
 });
