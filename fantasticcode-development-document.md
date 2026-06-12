@@ -329,7 +329,7 @@ Các yêu cầu phi chức năng áp dụng cho toàn bộ các thành phần c�
 
 #### 2.2.1. Phạm vi trong dự án
 
-- CLI nhận các tham số `--model`, `--prompt`, `--continue`, `--session`, `--fork`, `--agent` và `--workspace`.
+- CLI nhận các tham số `--model`, `--prompt`, `--continue`, `--session`, `--fork`, `--agent`, `--workspace` và `--debug`.
 - Prompt có thể truyền trực tiếp bằng flag hoặc qua stdin pipe.
 - Provider tích hợp sẵn gồm `openai` và `openrouter`, dùng HTTP API tương thích OpenAI.
 - Session được lưu dưới `.fantasticcode/sessions/`, có `latest.json` và ID dạng `sess_<32-hex>`.
@@ -788,14 +788,14 @@ sequenceDiagram
 
 ## **4. Thiết kế module/lớp**
 
-| **Module/Lớp** | **Trách nhiệm** | **Mẫu thiết kế liên quan** |
+| **Module/Lớp** | **Trách nhiệm** | **Vai trò thiết kế liên quan** |
 | --- | --- | --- |
 | `cli.ts` | Parse flags, đọc stdin, tạo `RunRequest` | Không áp dụng trực tiếp |
 | `AgentHarness` | Điều phối preflight và runner | Facade |
 | `PreflightPipeline` | Validate request, chọn session, resolve agent/provider, kiểm tra danh sách tool được phép | Chain of Responsibility |
-| `SessionSelectionStrategyResolver` | Chọn chiến lược new/continue/load/fork session | Strategy |
+| `SessionSelectionStrategyResolver` | Chọn concrete strategy new/continue/load/fork session | Strategy resolver / selection boundary |
 | `ProviderRegistry` | Phân giải `provider/model` thành provider config và model | Runtime selector/registry |
-| `ProviderFactoryRegistry` | Tạo `ModelClient` phù hợp với provider | Factory Method-style factory registry |
+| `ProviderFactoryRegistry` | Chọn provider factory và tạo `ModelClient` phù hợp với provider | Factory selector hỗ trợ Factory Method-style boundary |
 | `OpenAICompatibleAdapter` | Chuẩn hóa HTTP API tương thích OpenAI thành interface nội bộ | Adapter |
 | `AgentRegistry` | Chọn agent preset như `coder` hoặc `reviewer` | Runtime selector/registry |
 | `ToolRegistry` | Đăng ký và tra cứu tool callable | Command registry |
@@ -804,7 +804,7 @@ sequenceDiagram
 | `RunnerStateMachine` | Quản lý trạng thái hợp lệ của runner | State |
 | `Runner` | Điều phối model call, tool call, persistence và event | Điều phối các pattern |
 | `SessionStore` | Tạo, lưu, load, load latest và fork session | Memento, Prototype |
-| `AgentEventBus` | Phát sự kiện tới transcript/debug/console sinks | Observer |
+| `AgentEventBus` | Đóng vai trò Subject, phát sự kiện tới transcript/debug/console observers | Observer infrastructure |
 | `Workspace` | Giới hạn đường dẫn và thao tác file trong workspace; process risk do tool policy kiểm soát | Safety boundary |
 
 ### **4.1. Phân tích chuyên sâu các mẫu thiết kế GoF**
@@ -824,17 +824,17 @@ Phần này là trọng tâm của báo cáo vì mục tiêu học thuật chín
 
 #### **4.1.1. Bảng tổng hợp Design Pattern, trách nhiệm và minh chứng**
 
-| **Pattern** | **Thành viên phụ trách** | **Bài toán giải quyết** | **Participant chính trong code** | **Minh chứng kiểm thử/luồng chạy** |
+| **Pattern / mức áp dụng** | **Thành viên phụ trách** | **Bài toán giải quyết** | **Participant chính trong code** | **Minh chứng kiểm thử/luồng chạy** |
 | --- | --- | --- | --- | --- |
 | Facade | Nguyễn Hồng Phúc | Đơn giản hóa điểm vào hệ thống, tránh CLI phụ thuộc nhiều subsystem. | `AgentHarness` trong `src/harness.ts` | `test/harness-e2e.test.ts`, CLI chỉ gọi `harness.run(request)`. |
-| Strategy | Nguyễn Hồng Phúc | Chọn chiến lược session tại runtime; provider/agent là các runtime selector hỗ trợ thay đổi cấu hình chạy. | `SessionSelectionStrategy`; hỗ trợ bởi `ProviderRegistry`, `AgentRegistry` | `test/preflight.test.ts`, `test/agent.test.ts`, provider/model selector. |
+| Strategy - session selection chính | Nguyễn Hồng Phúc | Chọn chiến lược session tại runtime; provider/agent là các runtime selector hỗ trợ thay đổi cấu hình chạy. | `SessionSelectionStrategy`; hỗ trợ bởi `ProviderRegistry`, `AgentRegistry` | `test/preflight.test.ts`, `test/agent.test.ts`, provider/model selector. |
 | Adapter | Ngô Quang Tùng | Cô lập OpenAI-compatible wire format khỏi runner. | `OpenAICompatibleAdapter implements ModelClient` | `test/provider.test.ts`, provider response được normalize. |
-| Factory Method | Ngô Quang Tùng | Tạo `ModelClient` qua provider factory boundary thay vì gọi constructor trực tiếp. | `ProviderFactory`, `OpenAICompatibleProviderFactory`, `ProviderFactoryRegistry` | `test/provider.test.ts`, preflight tạo client qua registry. |
+| Factory Method-style provider boundary | Ngô Quang Tùng | Tạo `ModelClient` qua provider factory boundary thay vì gọi constructor trực tiếp. | `ProviderFactory`, `OpenAICompatibleProviderFactory`, `ProviderFactoryRegistry` | `test/provider.test.ts`, preflight tạo client qua registry. |
 | Command | Nguyễn Hải Ninh | Chuẩn hóa tool call thành object có schema và execute. | `ToolCommand`, `ReadTool`, `EditTool`, `ApplyPatchTool`, `BashTool` | `test/tools.test.ts`, runner append tool result. |
 | Chain of Responsibility | Nguyễn Hải Ninh | Tách validation/authorization/safety thành chuỗi handler có thể dừng sớm. | `PreflightPipeline`, `ToolPolicyPipeline` | `test/preflight.test.ts`, `test/tools.test.ts`. |
 | Memento | Ngô Đức Nam Khánh | Lưu snapshot session để continue/load lại. | `Session`, `SessionStore.save/load/loadLatest` | `test/session.test.ts`, session JSON và `latest.json`. |
-| Prototype | Ngô Đức Nam Khánh | Prototype-style fork một session từ session nguồn nhưng giữ lineage. | `SessionStore.fork()`, `ForkingSessionSelectionStrategy` | `test/session.test.ts`, `test/preflight.test.ts`. |
-| Observer | Hoàng Tùng | Tách runner khỏi console/transcript/debug sinks. | `AgentEventBus`, `ConsoleSink`, `TranscriptSink`, `DebugLogSink` | `test/events.test.ts`, event bus fan-out. |
+| Prototype-style session fork | Ngô Đức Nam Khánh | Fork một session từ session nguồn nhưng giữ lineage. | `SessionStore.fork()`, `ForkingSessionSelectionStrategy` | `test/session.test.ts`, `test/preflight.test.ts`. |
+| Observer | Hoàng Tùng | Tách runner khỏi console/transcript/debug sinks. | `AgentEventBus` là Subject; `ConsoleSink`, `TranscriptSink`, `DebugLogSink` là observers | `test/events.test.ts`, event bus fan-out. |
 | State | Hoàng Tùng | Kiểm soát lifecycle runner bằng transition hợp lệ. | `RunnerStateMachine`, các state class cụ thể | `test/state-machine.test.ts`, runner transitions. |
 
 Sơ đồ dưới đây tóm tắt cách các pattern phối hợp trong luồng chạy chính. Sơ đồ này không thay thế phần phân tích chi tiết từng pattern, mà giúp nhìn nhanh pattern nào xuất hiện ở boundary nào của hệ thống.
@@ -846,15 +846,15 @@ flowchart LR
   PF --> SS["SessionSelectionStrategy<br/>Strategy"]
   PF --> AR["AgentRegistry<br/>Runtime selector"]
   PF --> PR["ProviderRegistry<br/>Runtime selector"]
-  PR --> PFR["ProviderFactoryRegistry<br/>Factory Method"]
+  PR --> PFR["ProviderFactoryRegistry<br/>Factory Method-style boundary"]
   PFR --> AD["OpenAICompatibleAdapter<br/>Adapter"]
   F --> R[Runner]
   R --> TP["ToolPolicyPipeline<br/>Chain of Responsibility"]
   TP --> TC["ToolCommand<br/>Command"]
   R --> SM["RunnerStateMachine<br/>State"]
-  R --> EB["AgentEventBus<br/>Observer"]
+  R --> EB["AgentEventBus<br/>Observer Subject"]
   R --> ST["SessionStore<br/>Memento"]
-  ST --> FK["SessionStore.fork<br/>Prototype"]
+  ST --> FK["SessionStore.fork<br/>Prototype-style clone"]
 ```
 
 #### **4.1.2. Facade - `AgentHarness`**
@@ -1044,11 +1044,11 @@ flowchart LR
 
 | **Vai trò GoF** | **Thành phần trong dự án** | **Trách nhiệm** |
 | --- | --- | --- |
-| Originator | Runner/session flow | Sinh ra và cập nhật conversation state. |
+| Originator | Session state được `Runner` cập nhật | Sinh ra và cập nhật conversation state trong quá trình model/tool loop. |
 | Memento | `Session` JSON | Lưu state serializable: provider, model, agent, messages, metadata. |
-| Caretaker | `SessionStore` | Save/load/latest/fork session mà không cần biết logic runner. |
+| Caretaker | `SessionStore` | Save/load/loadLatest/fork session mà không cần biết logic runner. |
 
-**Luồng cộng tác:** `SessionStore.create()` tạo session mới. Runner append messages trong quá trình chạy. `SessionStore.save()` ghi session bằng atomic write và cập nhật `latest.json`. `--continue` gọi `loadLatest()`, `--session` gọi `load(id)`.
+**Luồng cộng tác:** `SessionStore.create()` tạo session mới. `Runner` append user/assistant/tool messages trong quá trình chạy, tức cập nhật state sẽ được lưu thành memento. `SessionStore.save()` ghi session bằng atomic write và cập nhật `latest.json`. `--continue` gọi `loadLatest()`, `--session` gọi `load(id)`.
 
 **Vì sao đây là Memento thật:** Session file là snapshot đủ để restore conversation state, nhưng không lưu object sống. `validateSession()` kiểm tra schema version và các field top-level bắt buộc, giúp memento có contract serializable rõ ràng.
 
@@ -1104,12 +1104,13 @@ flowchart LR
 | --- | --- | --- |
 | Subject | `AgentEventBus` | Quản lý subscriber và phát event bằng `publish()`. |
 | Publisher/Client | `Runner` | Gọi `eventBus.publish(...)` khi lifecycle/model/tool/session thay đổi. |
-| Observer interface | `AgentEventHandler`, `AgentEventSink` | Contract nhận event. |
-| Concrete observers | `ConsoleSink`, `TranscriptSink`, `DebugLogSink` | Ghi stderr, transcript NDJSON, debug NDJSON. |
+| Observer contract | `AgentEventHandler` | Contract mà `AgentEventBus.subscribe()` nhận để fan-out event. |
+| Sink abstraction | `AgentEventSink` | Interface helper cho các sink ghi log/output, được bọc thành handler khi subscribe. |
+| Concrete observers/sinks | `ConsoleSink`, `TranscriptSink`, `DebugLogSink` | Ghi stderr, transcript NDJSON, debug NDJSON. |
 
-**Luồng cộng tác:** `Runner` publish events như `run:started`, `model:response`, `tool:started`, `tool:completed`, `session:saved`, `run:completed`, `run:failed` thông qua `AgentEventBus`. Event bus fan-out event tới các handler đã subscribe. Mỗi sink tự quyết định cách xử lý event.
+**Luồng cộng tác:** `Runner` publish events như `run:started`, `model:response`, `tool:started`, `tool:completed`, `session:saved`, `run:completed`, `run:failed` thông qua `AgentEventBus`. Event bus fan-out event tới các `AgentEventHandler` đã subscribe. Các sink như `ConsoleSink`, `TranscriptSink` và `DebugLogSink` được bọc thành handler khi composition đăng ký observer.
 
-**Vì sao đây là Observer thật:** Runner không biết danh sách sink cụ thể và không gọi trực tiếp file logging. Subscriber có thể thêm/bớt qua `subscribe()`. Event bus không bị ép thành Singleton, nên dễ test và dễ cấu hình theo workspace.
+**Vì sao đây là Observer thật:** Runner không biết danh sách sink cụ thể và không gọi trực tiếp file logging. Subscriber có thể thêm/bớt qua `subscribe()`, còn event bus chỉ biết contract `AgentEventHandler`. Event bus không bị ép thành Singleton, nên dễ test và dễ cấu hình theo workspace.
 
 **Minh chứng:** `src/events.ts` có `subscribe()` và `publish()`; `test/events.test.ts` kiểm tra transcript sink, console fan-out và việc một observer lỗi không chặn observer khác.
 
