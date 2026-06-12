@@ -827,7 +827,7 @@ Phần này là trọng tâm của báo cáo vì mục tiêu học thuật chín
 | **Pattern** | **Thành viên phụ trách** | **Bài toán giải quyết** | **Participant chính trong code** | **Minh chứng kiểm thử/luồng chạy** |
 | --- | --- | --- | --- | --- |
 | Facade | Nguyễn Hồng Phúc | Đơn giản hóa điểm vào hệ thống, tránh CLI phụ thuộc nhiều subsystem. | `AgentHarness` trong `src/harness.ts` | `test/harness-e2e.test.ts`, CLI chỉ gọi `harness.run(request)`. |
-| Strategy | Nguyễn Hồng Phúc | Chọn session/provider/agent behavior tại runtime. | `SessionSelectionStrategy`, `ProviderRegistry`, `AgentRegistry` | `test/preflight.test.ts`, `test/agent.test.ts`, provider/model selector. |
+| Strategy | Nguyễn Hồng Phúc | Chọn chiến lược session tại runtime; provider/agent là các runtime selector hỗ trợ thay đổi cấu hình chạy. | `SessionSelectionStrategy`; hỗ trợ bởi `ProviderRegistry`, `AgentRegistry` | `test/preflight.test.ts`, `test/agent.test.ts`, provider/model selector. |
 | Adapter | Ngô Quang Tùng | Cô lập OpenAI-compatible wire format khỏi runner. | `OpenAICompatibleAdapter implements ModelClient` | `test/provider.test.ts`, provider response được normalize. |
 | Factory Method | Ngô Quang Tùng | Tạo `ModelClient` cụ thể qua factory thay vì gọi constructor trực tiếp. | `ProviderFactory`, `OpenAICompatibleProviderFactory`, `ProviderFactoryRegistry` | `test/provider.test.ts`, preflight tạo client qua registry. |
 | Command | Nguyễn Hải Ninh | Chuẩn hóa tool call thành object có schema và execute. | `ToolCommand`, `ReadTool`, `EditTool`, `ApplyPatchTool`, `BashTool` | `test/tools.test.ts`, runner append tool result. |
@@ -836,6 +836,26 @@ Phần này là trọng tâm của báo cáo vì mục tiêu học thuật chín
 | Prototype | Ngô Đức Nam Khánh | Fork một session từ session nguồn nhưng giữ lineage. | `SessionStore.fork()`, `ForkingSessionSelectionStrategy` | `test/session.test.ts`, `test/preflight.test.ts`. |
 | Observer | Hoàng Tùng | Tách runner khỏi console/transcript/debug sinks. | `AgentEventBus`, `ConsoleSink`, `TranscriptSink`, `DebugLogSink` | `test/events.test.ts`, event bus fan-out. |
 | State | Hoàng Tùng | Kiểm soát lifecycle runner bằng transition hợp lệ. | `RunnerStateMachine`, các state class cụ thể | `test/state-machine.test.ts`, runner transitions. |
+
+Sơ đồ dưới đây tóm tắt cách các pattern phối hợp trong luồng chạy chính. Sơ đồ này không thay thế phần phân tích chi tiết từng pattern, mà giúp nhìn nhanh pattern nào xuất hiện ở boundary nào của hệ thống.
+
+```mermaid
+flowchart LR
+  CLI["cli.ts"] --> F["AgentHarness<br/>Facade"]
+  F --> PF["PreflightPipeline<br/>Chain of Responsibility"]
+  PF --> SS["SessionSelectionStrategy<br/>Strategy"]
+  PF --> AR["AgentRegistry<br/>Runtime selector"]
+  PF --> PR["ProviderRegistry<br/>Runtime selector"]
+  PR --> PFR["ProviderFactoryRegistry<br/>Factory Method"]
+  PFR --> AD["OpenAICompatibleAdapter<br/>Adapter"]
+  F --> R[Runner]
+  R --> TP["ToolPolicyPipeline<br/>Chain of Responsibility"]
+  TP --> TC["ToolCommand<br/>Command"]
+  R --> SM["RunnerStateMachine<br/>State"]
+  R --> EB["AgentEventBus<br/>Observer"]
+  R --> ST["SessionStore<br/>Memento"]
+  ST --> FK["SessionStore.fork<br/>Prototype"]
+```
 
 #### **4.1.2. Facade - `AgentHarness`**
 
@@ -866,27 +886,27 @@ Phần này là trọng tâm của báo cáo vì mục tiêu học thuật chín
 - Hỏi: Có nguy cơ `AgentHarness` thành god object không?
   Trả lời: Không, vì nó chỉ điều phối, còn logic nằm trong các module chuyên trách.
 
-#### **4.1.3. Strategy - lựa chọn session, provider và agent**
+#### **4.1.3. Strategy - lựa chọn session và runtime selectors**
 
-**Bài toán thiết kế:** Cùng một runner phải hỗ trợ nhiều cách chọn session, nhiều provider/model và nhiều agent preset. Nếu dùng `if/else` rải rác trong runner, việc thêm chế độ mới sẽ làm runner phình to và khó test.
+**Bài toán thiết kế:** Cùng một runner phải hỗ trợ nhiều cách chọn session, nhiều provider/model và nhiều agent preset. Nếu dùng `if/else` rải rác trong runner, việc thêm chế độ mới sẽ làm runner phình to và khó test. Trong ba nhóm này, phần thể hiện Strategy GoF đầy đủ nhất là session selection; provider và agent là runtime selector/registry hỗ trợ thay đổi cấu hình chạy.
 
 **Ý đồ GoF:** Strategy đóng gói các thuật toán/hành vi có thể thay thế cho nhau sau một interface chung, sau đó chọn strategy tại runtime.
 
 **Participants trong FantasticCode:**
 
-| **Strategy family** | **Interface/selector** | **Concrete behavior** |
+| **Nhóm lựa chọn runtime** | **Interface/selector** | **Concrete behavior** |
 | --- | --- | --- |
-| Session selection | `SessionSelectionStrategy` | `NewSessionSelectionStrategy`, `ContinueLatestSessionStrategy`, `LoadByIdSessionStrategy`, `ForkingSessionSelectionStrategy` |
-| Provider selection | `ProviderRegistry.resolve()` | Chọn config `openai`, `openrouter` từ `provider/model`. |
-| Agent selection | `AgentRegistry.resolve()` | Chọn preset `coder`, `reviewer` với prompt/tool/max-turn khác nhau. |
+| Session selection - Strategy chính | `SessionSelectionStrategy` | `NewSessionSelectionStrategy`, `ContinueLatestSessionStrategy`, `LoadByIdSessionStrategy`, `ForkingSessionSelectionStrategy` |
+| Provider selection - selector hỗ trợ | `ProviderRegistry.resolve()` | Chọn config `openai`, `openrouter` từ `provider/model`. |
+| Agent selection - selector hỗ trợ | `AgentRegistry.resolve()` | Chọn preset `coder`, `reviewer` với prompt/tool/max-turn khác nhau. |
 
-**Luồng cộng tác:** `SessionSelectionStrategyResolver.resolve(request)` đọc flags và trả về strategy phù hợp. Strategy được chọn thực hiện `select(input)` để tạo/load/fork session. Provider và agent cũng được resolve ở runtime, nhưng runner chỉ nhận kết quả đã chuẩn bị, không tự quyết định bằng nhánh điều kiện lớn.
+**Luồng cộng tác:** `SessionSelectionStrategyResolver.resolve(request)` đọc flags và trả về strategy phù hợp. Strategy được chọn thực hiện `select(input)` để tạo/load/fork session. Provider và agent cũng được resolve ở runtime thông qua registry, nhưng runner chỉ nhận kết quả đã chuẩn bị, không tự quyết định bằng nhánh điều kiện lớn.
 
-**Vì sao đây là Strategy thật:** Nhóm có interface chung cho session strategy và nhiều concrete strategy có thể thay thế. Với provider/agent, registry đóng vai trò runtime selector cho các hành vi cùng contract. Quan trọng là CLI flags không phải strategy; chúng chỉ là input để chọn behavior.
+**Vì sao đây là Strategy thật:** Nhóm có interface chung cho session strategy và nhiều concrete strategy có thể thay thế. Đây là phần Strategy GoF đầy đủ nhất. Với provider/agent, báo cáo chỉ xem chúng là runtime selector hỗ trợ cùng mục tiêu thay đổi hành vi theo cấu hình, không claim là Strategy object đầy đủ như session selection. Quan trọng là CLI flags không phải strategy; chúng chỉ là input để chọn behavior.
 
 **Minh chứng:** `src/session-selection.ts` thể hiện rõ interface và concrete strategies; `test/preflight.test.ts` kiểm tra continue/load/fork; `test/agent.test.ts` kiểm tra agent preset resolution.
 
-**Trade-off:** Strategy tăng số class nhỏ, nhưng đổi lại runner không bị phụ thuộc vào mọi tổ hợp flag. Đây là trade-off phù hợp vì session selection là phần dễ mở rộng.
+**Trade-off:** Strategy tăng số class nhỏ, nhưng đổi lại runner không bị phụ thuộc vào mọi tổ hợp flag. Đây là trade-off phù hợp vì session selection là phần dễ mở rộng; provider/agent selector vẫn giữ đơn giản bằng registry vì hiện chưa cần tách thành strategy object riêng.
 
 **Câu hỏi bảo vệ dự kiến:**
 
@@ -1082,11 +1102,12 @@ Phần này là trọng tâm của báo cáo vì mục tiêu học thuật chín
 
 | **Vai trò GoF** | **Thành phần trong dự án** | **Trách nhiệm** |
 | --- | --- | --- |
-| Subject/Event source | `AgentEventBus` và `Runner` | Runner publish event qua bus. |
+| Subject | `AgentEventBus` | Quản lý subscriber và phát event bằng `publish()`. |
+| Publisher/Client | `Runner` | Gọi `eventBus.publish(...)` khi lifecycle/model/tool/session thay đổi. |
 | Observer interface | `AgentEventHandler`, `AgentEventSink` | Contract nhận event. |
 | Concrete observers | `ConsoleSink`, `TranscriptSink`, `DebugLogSink` | Ghi stderr, transcript NDJSON, debug NDJSON. |
 
-**Luồng cộng tác:** Runner publish events như `run:started`, `model:response`, `tool:started`, `tool:completed`, `session:saved`, `run:completed`, `run:failed`. Event bus fan-out event tới các handler đã subscribe. Mỗi sink tự quyết định cách xử lý event.
+**Luồng cộng tác:** `Runner` publish events như `run:started`, `model:response`, `tool:started`, `tool:completed`, `session:saved`, `run:completed`, `run:failed` thông qua `AgentEventBus`. Event bus fan-out event tới các handler đã subscribe. Mỗi sink tự quyết định cách xử lý event.
 
 **Vì sao đây là Observer thật:** Runner không biết danh sách sink cụ thể và không gọi trực tiếp file logging. Subscriber có thể thêm/bớt qua `subscribe()`. Event bus không bị ép thành Singleton, nên dễ test và dễ cấu hình theo workspace.
 
@@ -1103,9 +1124,9 @@ Phần này là trọng tâm của báo cáo vì mục tiêu học thuật chín
 
 #### **4.1.11. State - `RunnerStateMachine`**
 
-**Bài toán thiết kế:** Runner có nhiều trạng thái lifecycle: khởi tạo, resolve, chạy model, chờ tool, persist, hoàn thành hoặc lỗi. Nếu chỉ dùng string và `switch` trong runner, transition bất hợp lệ dễ xuất hiện và khó kiểm thử.
+**Bài toán thiết kế:** Runner có nhiều trạng thái lifecycle: khởi tạo, resolve, chạy model, chờ tool, persist, hoàn thành hoặc lỗi. Nếu chỉ dùng string và `switch` trong runner, transition bất hợp lệ dễ xuất hiện và khó kiểm thử. Trong phiên bản hiện tại, State pattern tập trung vào kiểm soát transition hợp lệ và terminal state; behavior nghiệp vụ chính của model/tool loop vẫn nằm trong `Runner`.
 
-**Ý đồ GoF:** State biểu diễn trạng thái thành object riêng, để object hiện tại quyết định transition/hành vi hợp lệ dựa trên state.
+**Ý đồ GoF:** State biểu diễn trạng thái thành object riêng, để object hiện tại quyết định transition hợp lệ dựa trên state. Với FantasticCode, trách nhiệm chính của state object là bảo vệ lifecycle, không phải thay thế toàn bộ logic runner.
 
 **Participants trong FantasticCode:**
 
@@ -1129,7 +1150,7 @@ completed -> none
 failed -> none
 ```
 
-**Vì sao đây là State thật:** Behavior validate transition nằm trong từng state class, không nằm trong một enum hoặc một `switch` duy nhất. `completed` và `failed` là terminal states nên mọi transition tiếp đều bị từ chối.
+**Vì sao đây là State thật:** Behavior validate transition nằm trong từng state class, không nằm trong một enum hoặc một `switch` duy nhất. `completed` và `failed` là terminal states nên mọi transition tiếp đều bị từ chối. Báo cáo giới hạn claim của State ở lifecycle/transition control để tránh nói quá rằng toàn bộ hành vi runner đã được chuyển vào state object.
 
 **Minh chứng:** `src/state-machine.ts` định nghĩa state interface và concrete states; `test/state-machine.test.ts` kiểm tra transition hợp lệ và transition sai; `runner.ts` sử dụng state machine trong luồng chạy thực.
 
@@ -1159,7 +1180,7 @@ Việc nêu rõ các pattern không dùng giúp báo cáo chuyên nghiệp hơn 
 
 FantasticCode đáp ứng mục tiêu môn học vì 10 mẫu GoF đều gắn với trách nhiệm thật trong kiến trúc và có minh chứng từ mã nguồn/test:
 
-- Nhóm cấu trúc hệ thống dùng Facade, Strategy, Adapter và Factory Method để giảm coupling giữa CLI, provider, agent và runner.
+- Nhóm cấu trúc hệ thống dùng Facade, Strategy ở session selection, Adapter và Factory Method để giảm coupling giữa CLI, provider, agent và runner.
 - Nhóm tool safety dùng Command và Chain of Responsibility để chuẩn hóa tool call, validation, workspace sandbox và risk policy.
 - Nhóm session dùng Memento và Prototype để hỗ trợ continue/fork có truy vết.
 - Nhóm runtime observability và lifecycle dùng Observer và State để tách event/logging khỏi runner và kiểm soát transition hợp lệ.
