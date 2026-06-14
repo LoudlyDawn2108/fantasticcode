@@ -8,11 +8,11 @@
 
 **Đề Tài:**
 
-**Quản Lý Nhân Sự Trường Đại Học Thủy Lợi**
+**Xây Dựng CLI Agent Harness Fantasticcode**
 
 Nhóm thực hiện: Nhóm 3 - 65KTPM
 
-Giảng viên hướng dẫn: TS.Cù Việt Dũng
+Giảng viên hướng dẫn: TS. Cù Việt Dũng
 
 *Hà Nội, 2026*
 
@@ -20,13 +20,11 @@ Giảng viên hướng dẫn: TS.Cù Việt Dũng
 
 # **LỜI NÓI ĐẦU**
 
-Trong kỷ nguyên số hóa mạnh mẽ hiện nay, công nghệ thông tin đã và đang trở thành động lực then chốt thúc đẩy sự phát triển của mọi lĩnh vực trong đời sống xã hội, đặc biệt là trong công tác quản lý và điều hành. Việc ứng dụng các giải pháp phần mềm hiện đại không chỉ góp phần nâng cao hiệu quả làm việc, giảm thiểu sai sót mà còn tối ưu hóa nguồn lực, giúp các tổ chức vận hành một cách khoa học và chuyên nghiệp hơn.
+Trong bối cảnh trí tuệ nhân tạo ngày càng được ứng dụng vào hoạt động phát triển phần mềm, các công cụ hỗ trợ lập trình không chỉ cần trả lời câu hỏi mà còn cần ghi nhớ ngữ cảnh, hỗ trợ thao tác trên dự án và phù hợp với quy trình làm việc của lập trình viên. Vì vậy, nhóm chúng em lựa chọn đề tài **fantasticcode** để xây dựng một công cụ agent chạy bằng dòng lệnh, có thể dùng trong demo, học tập và thử nghiệm quy trình làm việc với AI.
 
-Trong môi trường giáo dục đại học, công tác quản lý nhân sự đóng vai trò vô cùng quan trọng, ảnh hưởng trực tiếp đến chất lượng đào tạo và hoạt động của nhà trường. Tuy nhiên, việc quản lý thông tin cán bộ, giảng viên, nhân viên bằng các phương pháp truyền thống hoặc hệ thống rời rạc thường gặp nhiều hạn chế như khó cập nhật, tra cứu phức tạp và thiếu tính đồng bộ. Trước yêu cầu thực tiễn đó, việc xây dựng một phần mềm quản lý nhân sự phù hợp với đặc thù của Trường Đại học Thủy Lợi là hết sức cần thiết.
+Tài liệu này được tổ chức theo hướng tách bạch giữa yêu cầu sản phẩm và chi tiết triển khai. Các phần I đến V tập trung vào góc nhìn khách hàng, kế hoạch dự án, thiết kế mức khái niệm, kiểm thử và đóng gói ở mức sản phẩm. Phần VI giải thích các mẫu thiết kế GoF được áp dụng. Phần VII trình bày riêng chi tiết kỹ thuật, công nghệ sử dụng và kiến trúc cài đặt.
 
-Xuất phát từ nhu cầu trên, nhóm chúng em đã tiến hành phân tích yêu cầu khách hàng cho phần mềm quản lý nhân sự Trường Đại học Thủy Lợi, nhằm làm rõ các nghiệp vụ quản lý, xác định các chức năng cần thiết cũng như các yêu cầu phi chức năng của hệ thống. Đây là bước nền tảng quan trọng, giúp định hướng cho quá trình thiết kế và phát triển phần mềm trong các giai đoạn tiếp theo, đồng thời là cơ hội để chúng em vận dụng những kiến thức đã học trong môn *Phát Triển Dự án phần mềm* vào một bài toán thực tế.
-
-Mặc dù đã rất cố gắng, do hạn chế về thời gian và kinh nghiệm, đề tài khó tránh khỏi những thiếu sót nhất định. Nhóm chúng em kính mong nhận được sự góp ý và chỉ dẫn thêm từ thầy để bài làm được hoàn thiện hơn.
+Mặc dù nhóm đã cố gắng hoàn thiện sản phẩm và tài liệu, do giới hạn về thời gian và kinh nghiệm, bài làm khó tránh khỏi thiếu sót. Nhóm chúng em kính mong nhận được góp ý và chỉ dẫn thêm từ thầy để đề tài được hoàn thiện hơn.
 
 Chúng em xin trân trọng cảm ơn!
 
@@ -36,351 +34,281 @@ Chúng em xin trân trọng cảm ơn!
 
 ### **1.1. Giới thiệu**
 
-#### ***1.1.1. Phạm vi áp dụng***
-
-Tài liệu Kế hoạch Quản lý Yêu cầu (Requirements Management Plan – RMP) này được xây dựng nhằm xác định các phương pháp, quy trình và công cụ được sử dụng để quản lý các yêu cầu của Hệ thống Quản lý Nhân sự (Human Resource Management System – HRMS) phục vụ Trường Đại học Thủy Lợi.
+Tài liệu Kế hoạch Quản lý Yêu cầu này xác định cách nhóm thu thập, phân tích, đặc tả, theo dõi và kiểm soát yêu cầu của dự án **fantasticcode**. Ở mức sản phẩm, hệ thống hướng tới một công cụ hỗ trợ người dùng làm việc với agent AI thông qua dòng lệnh, có khả năng duy trì ngữ cảnh làm việc và hỗ trợ thao tác an toàn trong thư mục dự án.
 
 Tài liệu đóng vai trò là cơ sở để:
 
 ##### 1. Định hướng hoạt động thu thập, phân tích, đặc tả và quản lý yêu cầu hệ thống;
-##### 2. Đảm bảo các yêu cầu được xác định rõ ràng, nhất quán và có khả năng truy xuất nguồn gốc
-##### 3. Hỗ trợ kiểm soát và quản lý các thay đổi yêu cầu trong suốt vòng đời phát triển hệ thống;
-##### 4. Làm tài liệu tham chiếu cho các giai đoạn thiết kế, phát triển, kiểm thử và nghiệm thu hệ thống
-
-#### ***1.1.2. Phạm vi áp dụng***
-
-Bản RMP này áp dụng cho toàn bộ các yêu cầu của hệ thống HRMS được phát triển nhằm phục vụ công tác quản lý nhân sự tại **Trường Đại học Thủy Lợi**, bao gồm các đơn vị đào tạo, đơn vị nghiên cứu khoa học, các phòng ban chức năng và các cơ sở trực thuộc nhà trường.
+##### 2. Đảm bảo các yêu cầu được xác định rõ ràng, nhất quán và có khả năng truy xuất nguồn gốc;
+##### 3. Hỗ trợ kiểm soát thay đổi yêu cầu trong suốt vòng đời phát triển hệ thống;
+##### 4. Làm tài liệu tham chiếu cho các giai đoạn thiết kế, phát triển, kiểm thử và đóng gói hệ thống.
 
 ### **1.2. Công cụ sử dụng và các kiểu yêu cầu**
 
-#### ***1.2.1. Các công cụ sử dụng quản lý yêu cầu***
-
 | **STT** | **Công cụ** | **Mục đích sử dụng** |
 | --- | --- | --- |
-| 1 | Microsoft Word | Soạn thảo và chỉnh sửa các tài liệu quản lý yêu cầu như RMP, SRS |
-| 2 | StarUML/ Draw.io | Mô hình hóa tiến trình công việc qua các sơ đồ GANTT, đường Găng.  Mô hình hóa hệ thống thông qua các sơ đồ Use Case, các sơ đồ UML liên quan. |
-| 3 | Discord / Họp nhóm trực tiếp | Trao đổi thông tin, thảo luận và xác nhận yêu cầu giữa các thành viên trong nhóm và các bên liên quan |
-
-#### ***1.2.2. Các kiểu yêu cầu cho dự án***
+| 1 | Tài liệu nhóm | Ghi nhận yêu cầu, quyết định thiết kế và nội dung báo cáo. |
+| 2 | Công cụ mô hình hóa | Minh họa use case, activity, sequence và kế hoạch dự án. |
+| 3 | Công cụ quản lý phiên bản | Theo dõi thay đổi và hỗ trợ review tài liệu. |
+| 4 | Kênh trao đổi nhóm | Thống nhất phạm vi, phân công và xử lý phản hồi. |
+| 5 | Công cụ kiểm thử | Kiểm tra chất lượng trước khi bàn giao. |
 
 | **Loại yêu cầu** | **Loại tài liệu** | **Mô tả** |
 | --- | --- | --- |
-| Yêu cầu của các bên liên quan (STRQ) | Yêu cầu của các bên liên quan (STR) | Mô tả các nhu cầu, mong đợi và mục tiêu chính của người dùng và các bên liên quan đối với hệ thống. |
-| Yêu cầu tính năng (FEAT) | Tài liệu tầm nhìn (VIS) | Mô tả các điều kiện, khả năng và các tính năng tổng quát mà hệ thống cần cung cấp. |
-| Ca sử dụng (UC) / Kịch bản (SC) | Đặc tả ca sử dụng (UCS) | Mô tả chi tiết các ca sử dụng và kịch bản, phản ánh đầy đủ các yêu cầu chức năng của hệ thống. |
-| Yêu cầu bổ sung (SUPL) | Đặc tả bổ sung (SS) | Mô tả các yêu cầu phi chức năng và các ràng buộc của hệ thống không được thể hiện trong mô hình ca sử dụng. |
-
-#### ***1.2.3. Loại tài liệu yêu cầu cho dự án***
-
-| **Loại tài liệu** | **Mô tả** | **Loại yêu cầu mặc định** |
-| --- | --- | --- |
-| Kế hoạch quản lý yêu cầu (RMP) | Tài liệu mô tả phương pháp, quy trình và công cụ quản lý yêu cầu của dự án. | Không áp dụng |
-| Yêu cầu của các bên liên quan (STR) | Tập hợp các yêu cầu nghiệp vụ và mong đợi chính từ các bên liên quan. | Yêu cầu bên liên quan (STRQ) |
-| Tài liệu tầm nhìn (VIS) | Mô tả tổng quan hệ thống, phạm vi và các mục tiêu chính của dự án. | Yêu cầu tính năng (FEAT) |
-| Đặc tả ca sử dụng (UCS) | Mô tả chi tiết các ca sử dụng và cách người dùng tương tác với hệ thống. | Ca sử dụng (UC) và Kịch bản (SC) |
-| Đặc tả bổ sung (SS) | Mô tả các yêu cầu phi chức năng và các ràng buộc của hệ thống. | Yêu cầu bổ sung (SUPL) |
+| Yêu cầu của các bên liên quan (STRQ) | Yêu cầu của các bên liên quan (STR) | Mô tả nhu cầu của người dùng, nhóm phát triển và giảng viên đối với hệ thống. |
+| Yêu cầu tính năng (FEAT) | Tài liệu tầm nhìn (VIS) | Mô tả các chức năng tổng quát như chạy tác vụ, chọn mô hình, quản lý phiên làm việc và quan sát kết quả. |
+| Ca sử dụng (UC) / Kịch bản (SC) | Đặc tả ca sử dụng (UCS) | Mô tả các luồng sử dụng chính từ góc nhìn người dùng. |
+| Yêu cầu bổ sung (SUPL) | Đặc tả bổ sung (SS) | Mô tả yêu cầu phi chức năng như an toàn, độ tin cậy, khả năng mở rộng và khả năng kiểm thử. |
 
 ### **1.3. Các nhân tố tham gia dự án phần mềm**
 
+Dự án chỉ có **một team duy nhất**. Các thành viên cùng tham gia phân tích, thiết kế, lập trình, kiểm thử và viết tài liệu; tuy nhiên mỗi thành viên phụ trách sâu một nhóm nội dung và mẫu thiết kế khác nhau.
+
 | **Team** | **Vai trò** | **Số lượng** | **Nhiệm vụ chính** |
 | --- | --- | --- | --- |
-| Team 1 | BA / PM | 2 | Phân tích yêu cầu, lập kế hoạch và quản lý tiến độ dự án |
-| Team 2 | SA / Design | 4 | Thiết kế kiến trúc hệ thống, cơ sở dữ liệu và giao diện người dùng (UI/UX) |
-| Team 3 | Dev | 4 | Phát triển hệ thống Backend và Frontend theo thiết kế |
-| Team 4 | Test | 2 | Xây dựng và thực hiện kiểm thử, đảm bảo chất lượng phần mềm |
-| Team 5 | Deploy | 2 | Triển khai hệ thống, cấu hình môi trường và thiết lập quy trình CI/CD |
-| **Tổng** |  | **14** |  |
+| Team Fantasticcode | Phân tích, thiết kế, lập trình, kiểm thử, tài liệu | 5 | Xây dựng sản phẩm, kiểm chứng chức năng, giải thích design pattern và hoàn thiện báo cáo. |
+| **Tổng** |  | **5** |  |
 
 ### **1.4. Bảng liên lạc với các nhân tố chính (Stakeholder)**
 
-#### ***1.4.1. Các nhân tố chính***
-
 | **STT** | **Nhân tố chính** | **Vai trò trong dự án** | **Đơn vị** | **Trách nhiệm chính** | **Hình thức liên lạc** |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Ban Giám hiệu | Nhà tài trợ / Phê duyệt | Ban Giám hiệu | Phê duyệt yêu cầu, xem xét báo cáo tổng hợp | Họp định kỳ, báo cáo |
-| 2 | Phòng Tổ chức – Cán bộ | Khách hàng nghiệp vụ | Phòng TCCB | Cung cấp yêu cầu quản lý hồ sơ nhân sự | Họp, email |
-| 3 | Phòng Tài chính – Kế toán | Khách hàng nghiệp vụ | Phòng TCKT | Cung cấp yêu cầu về lương, phụ cấp | Họp, trao đổi trực tiếp |
-| 4 | Phòng CNTT | Đơn vị kỹ thuật | Phòng CNTT | Tư vấn kỹ thuật, hạ tầng, bảo mật | Họp kỹ thuật |
-| 2 | Trưởng khoa / phòng | Người sử dụng chính | Các khoa / phòng | Góp ý, xác nhận yêu cầu quản lý nhân sự đơn vị | Họp, khảo sát |
-| 6 | Nhóm phát triển | Thực hiện dự án | Nhóm dự án | Phân tích, thiết kế và triển khai hệ thống | Họp nhóm, công cụ trực tuyến |
+| 1 | Giảng viên hướng dẫn | Người định hướng và đánh giá | Bộ môn | Góp ý về phạm vi, tài liệu và mức độ phù hợp của design pattern | Trao đổi trực tiếp, báo cáo |
+| 2 | Nhóm phát triển | Đơn vị thực hiện | Nhóm 3 - 65KTPM | Phân tích, thiết kế, cài đặt, kiểm thử và viết tài liệu | Trao đổi nhóm, review tài liệu |
+| 3 | Người dùng dòng lệnh | Người sử dụng chính | Lập trình viên / sinh viên | Chạy tác vụ agent, quản lý phiên làm việc và xem kết quả | Hướng dẫn sử dụng, demo |
+| 4 | Dịch vụ mô hình AI | Hệ thống ngoài | Nhà cung cấp mô hình | Cung cấp khả năng sinh phản hồi cho agent | Tài liệu nhà cung cấp |
 
-#### ***1.4.2. Các bên liên quan khác***
-
-| **STT** | **Bên liên quan** | **Vai trò / Mối liên hệ** |
-| --- | --- | --- |
-| 1 | Bộ Nông nghiệp và Môi trường | Cơ quan quản lý nhà nước, ban hành các quy định liên quan đến nhân sự và chế độ |
-| 2 | Bộ Giáo dục và Đào tạo | Cơ quan quản lý chuyên ngành giáo dục, quy định tiêu chuẩn và chính sách đối với cán bộ, giảng viên |
-| 3 | Cơ quan Bảo hiểm xã hội | Đơn vị phối hợp trong quản lý bảo hiểm, chế độ cho người lao động |
-| 4 | Cơ quan Thuế | Đơn vị phối hợp trong quản lý nghĩa vụ thuế thu nhập cá nhân |
-
-## **2. Tài liệu yêu cầu người dùng (STR)**
+## **2. Tài liệu yêu cầu người dùng (STRQ)**
 
 ### **2.1. Mục đích**
 
-Tài liệu này nhằm thu thập và mô tả các nhu cầu, mong đợi và yêu cầu chính của các bên liên quan đối với Hệ thống Quản lý Nhân sự (HRMS) của Trường Đại học Thủy Lợi. Tài liệu đóng vai trò làm cơ sở cho việc phân tích, xác định yêu cầu phần mềm và hỗ trợ các giai đoạn thiết kế, phát triển và kiểm thử hệ thống.
+Tài liệu này mô tả nhu cầu chính đối với **fantasticcode**: một công cụ agent nhỏ gọn, chạy bằng dòng lệnh, có thể dùng để đặt yêu cầu, nhận kết quả, tiếp tục ngữ cảnh làm việc và minh họa design pattern trong một sản phẩm gần với thực tế.
 
 ### **2.2. Phạm vi**
 
-Tài liệu áp dụng cho toàn bộ các yêu cầu của các bên liên quan tham gia vào hệ thống HRMS, bao gồm Ban Giám hiệu, các phòng ban chức năng, các khoa, cán bộ, giảng viên và nhân viên của Trường Đại học Thủy Lợi. Nội dung tập trung vào các yêu cầu nghiệp vụ và mong đợi ở mức tổng quát, không đi sâu vào thiết kế hay chi tiết kỹ thuật.
+Phạm vi STR tập trung vào yêu cầu mức người dùng và mức hệ thống. Sản phẩm không hướng tới giao diện chat trực quan hay nền tảng cộng tác phức tạp, mà ưu tiên khả năng chạy bằng tham số, dễ lặp lại trong demo và phù hợp với quy trình của lập trình viên.
 
 ### **2.3. Yêu cầu thu thập từ Stakeholder**
 
 | **Stakeholder** | **Phương pháp thu thập yêu cầu** | **Yêu cầu (STRQ)** |
 | --- | --- | --- |
-| Phòng CNTT | Khảo sát | STRQ 1: Cần hệ thống cho phép đăng nhập, đăng xuất, đổi mật khẩu như một hệ thống phần mềm nhân sự khác tài khoản có phân quyền nhiều tài khoản.  STRQ 2: Quản trị viên là người có thể quản lý tài khoản như thêm, sửa hoặc khóa tài khoản |
-| Ban giám hiệu | Phỏng vấn | STRQ 3: Quản trị viên có thể quản lý cơ cấu tổ chức, thêm vào các đơn vị mới, chỉnh sửa thông tin hoặc thông báo giải thể, sáp nhập đơn vị  STRQ 4: Phòng nhân sự có thể tạo hợp đồng lao động  STRQ 5: Phòng nhân sự có thể ghi nhận đánh giá nhân sự |
-| Phòng Tổ chức Cán bộ | Quan sát, mô phỏng nhiệm vụ | STRQ 6: Phòng nhân sự muốn quản lý hồ sơ nhân sự như thêm, sửa hồ sơ và cho phép đánh dấu thôi việc hồ sơ nếu nhân sự không làm có thêm phương pháp tìm kiếm và lọc để tiện quản lý.  STRQ 7: Phòng nhân sự cần hệ thống cho phép mở khóa đào tạo cho nhân sự  STRQ 8: Phòng nhân sự có thể cấu hình lương, loại phụ cấp, loại hợp đồng |
-| Phòng Tài chính Kế Toán | Phỏng vấn | STRQ 9: Phòng tài chính muốn thống kê về nhân sự |
-| Trưởng Khoa/ Phòng | Hội thảo yêu cầu | STRQ 10 Người dùng phần mềm có thể xem hồ sơ cá nhân, xem thông tin đơn vị đang công tác  STRQ 11: Người dùng phần mềm có thể đăng ký khóa học được mở, xem các khóa học đã đăng ký |
+| Giảng viên hướng dẫn | Trao đổi đề tài | STRQ 1: Cần một hệ thống nhỏ gọn nhưng thể hiện được nhiều design pattern trong kiến trúc thực tế. STRQ 2: Tài liệu phải giải thích được pattern và liên hệ với trách nhiệm trong sản phẩm. |
+| Người dùng dòng lệnh | Phân tích nhu cầu sử dụng | STRQ 3: Người dùng cần gửi yêu cầu cho agent và lựa chọn cách chạy phù hợp. STRQ 4: Người dùng cần tiếp tục phiên làm việc cũ hoặc mở nhánh thử nghiệm mới. |
+| Nhóm phát triển | Phân tích phạm vi sản phẩm | STRQ 5: Hệ thống cần hỗ trợ agent thao tác với thư mục làm việc một cách có kiểm soát. STRQ 6: Các thao tác có rủi ro phải được giới hạn bởi chính sách an toàn. |
+| Người demo / người vận hành | Quan sát quá trình demo | STRQ 7: Hệ thống cần có cơ chế cấu hình, quan sát kết quả và kiểm tra chất lượng trước khi trình bày. |
 
 ## **3. Tài liệu đặc trưng (VIS)**
 
 ### **3.1. Mục đích**
 
-Tài liệu này định nghĩa tầm nhìn và phạm vi cho dự án Hệ thống Quản lý Nhân sự (HRMS) của Trường Đại học Thủy lợi. Nó cung cấp một cái nhìn tổng quan về nhu cầu kinh doanh, các bên liên quan, và các tính năng cốt lõi của giải pháp, làm cơ sở chung cho đội ngũ phát triển và các bên liên quan (Stakeholders).
+Tài liệu tầm nhìn định nghĩa mục tiêu và phạm vi của **fantasticcode**. Hệ thống được xây dựng như một minh họa thực tế cho việc áp dụng design pattern trong một công cụ agent: mỗi pattern không chỉ được nhắc tên, mà được gắn với một vấn đề thật của sản phẩm.
 
 ### **3.2. Phạm vi**
 
-Hệ thống tập trung vào việc quản lý toàn diện vòng đời nhân sự của nhà trường được các stakeholder đề xuất, thay thế cho các quy trình thủ công rời rạc hiện tại.
-
 Trong phạm vi:
 
-#### 1. Quản lý hồ sơ nhân sự toàn diện (cán bộ, giảng viên, nhân viên)
-#### 2. Quản lý hợp đồng lao động
-#### 3. Quản lý cơ cấu tổ chức (Khoa/Viện/Bộ môn) và lịch sử biến động cơ bản
-#### 4. Quản lý đào tạo và phát triển
-#### 5. Cấu hình tham số nghiệp vụ (lương, phụ cấp, hợp đồng)
-#### 6. Quản lý nhân sự (bổ nhiệm, miễn nhiệm) trong cơ cấu tổ chức
-#### 7. Cổng thông tin tự phục vụ cho nhân viên
-#### 8. Báo cáo và thống kê nhân sự
+#### 1. Công cụ chạy bằng dòng lệnh, không yêu cầu giao diện tương tác phức tạp.
+#### 2. Hỗ trợ người dùng lựa chọn mô hình AI và cấu hình tác nhân phù hợp với tác vụ.
+#### 3. Hỗ trợ tạo mới, tiếp tục, mở lại, phân nhánh và liệt kê phiên làm việc.
+#### 4. Hỗ trợ agent thao tác với thư mục làm việc trong giới hạn an toàn.
+#### 5. Hỗ trợ ghi nhận tiến trình, kết quả và thông tin phục vụ kiểm tra.
+#### 6. Hỗ trợ kiểm thử và đóng gói để phục vụ demo hoặc bàn giao.
 
-###
+Ngoài phạm vi:
+
+#### 1. Không xây dựng giao diện web.
+#### 2. Không xây dựng giao diện terminal tương tác dạng toàn màn hình.
+#### 3. Không triển khai nền tảng nhiều agent phân tán.
+#### 4. Không thay thế hệ thống sandbox cấp hệ điều hành.
 
 ### **3.3. Tính năng hệ thống**
 
 | **Yêu cầu (STRQ)** | **Kỹ thuật xác định FEAT** | **Tính năng (FEAT)** |
 | --- | --- | --- |
-| STRQ 1: Cần hệ thống cho phép đăng nhập, đăng xuất, đổi mật khẩu như một hệ thống phần mềm nhân sự khác tài khoản có phân quyền nhiều tài khoản. | Phân tách  Làm cho đầy đủ | FEAT 1.1: Mọi người dùng có thể đăng nhập bằng tài khoản.  FEAT 1.2: Mọi người dùng có thể đăng xuất khỏi tài khoản đang sử dụng.  FEAT 1.3: Hệ thống tự đống đăng xuất khỏi phiên làm việc nếu người dùng không thao tác với trang web trong 30 phút.  FEAT 1.4: Mọi người dùng có thể đổi mật khẩu tài khoản đang sử dụng. |
-| STRQ 2: Quản trị viên là người có thể quản lý tài khoản như thêm, sửa hoặc khóa tài khoản | Phân tách  Thêm chi tiết  Làm cho đầy đủ | FEAT 2.1: Hệ thống cho phép quản trị viên có thể tìm kiếm tài khoản người dùng  FEAT 2.2: Hệ thống cho phép quản trị viên có thể thêm mới tài khoản người dùng  Feat 2.3: Hệ thống cho phép quản trị viên có thể sửa tài khoản người dùng  FEAT 2.4: Hệ thống cho phép quản trị viên có thể thay đổi trạng thái của tài khoản người dùng (Trạng thái: Khóa/ Mở khóa)  FEAT 2.2: Hệ thống có thể tự động khóa tài khoản của nhân sự đã thôi việc |
-| STRQ 3: Quản trị viên có thể quản lý cơ cấu tổ chức, thêm vào các đơn vị mới, chỉnh sửa thông tin hoặc thông báo giải thể, sáp nhập đơn vị | Phân tách  Làm cho đầy đủ  Thêm chi tiết  Sửa chữa | FEAT 3.1: Hệ thống cung cấp cơ cấu tổ chức phân cấp đơn vị theo dạng cha-con có gốc là trường Đại học Thủy Lợi.  FEAT 3.2: Hệ thống cho phép quản trị viên thêm mới đơn vị tổ chức nhân sự  FEAT 3.3: Hệ thống cho phép quản trị viên sửa thông tin đơn vị tổ chức nhân sự  FEAT 3.4: Hệ thống cho phép quản trị viên thay đổi trạng thái của đơn vị tổ chức nhân sự (Trạng thái: Giải thể /Sáp nhập)  FEAT 3.2: Hệ thống cho phép phòng nhân sự bổ nhiệm nhân sự vào một đơn vị tổ chức nhân sự  FEAT 3.6: Hệ thống cho phép phòng nhân sự bãi nhiệm nhân sự khỏi một đơn vị tổ chức nhân sự  FEAT 3.7: Hệ thống cho phép phòng nhân sự và quản trị viên xem chi tiết thông tin đơn vị tổ chức nhân sự |
-| STRQ 4: Phòng nhân sự có thể tạo hợp đồng lao động | Thêm chi tiết | FEAT 4.1: Hệ thống cho phép phòng nhân sự tạo hợp đồng cho nhân sự không có hợp đồng hoặc cần gia hạn hợp đồng. |
-| STRQ 5: Phòng nhân sự có thể ghi nhận đánh giá nhân sự | Sao chép | FEAT 5.1: Hệ thống cho phép phòng nhân sự ghi đánh giá cho nhân sự (Loại đánh giá: Khen thưởng/ Kỷ luật) |
-| STRQ 6: Phòng nhân sự muốn quản lý hồ sơ nhân sự như thêm, sửa hồ sơ và cho phép đánh dấu thôi việc hồ sơ nếu nhân sự không làm có thêm phương pháp tìm kiếm và lọc để tiện quản lý. | Phân tách  Làm cho rõ ràng  Thêm chi tiết | FEAT 6.1: Hệ thống cho phép phòng nhân sự tìm kiếm hồ sơ nhân sự  FEAT 6.2: Hệ thống cho phép phòng nhân sự lọc hồ sơ nhân sự  FEAT 6.3: Hệ thống cho phép phòng nhân sự thêm mới hồ sơ nhân sự  FEAT 6.4: Hệ thống cho phép phòng nhân sự chỉnh sửa hồ sơ nhân sự  FEAT 6.2: Hệ thống cho phép phòng nhân sự đánh dấu thôi việc nhân sự  FEAT 6.6: Hệ thống có thể tự động đánh dấu thôi việc nhân sự nếu hợp đồng hết hạn quá thời gian cho phép của loại hợp đồng  FEAT 6.7: Hệ thống cho phép phòng nhân sự và phòng tài chính có thể xem chi tiết hồ sơ nhân sự  FEAT 6.8: Hệ thống cho phép phòng nhân sự và phòng tài chính có thể in hồ sơ nhân sự |
-| STRQ 7: Phòng nhân sự cần hệ thống cho phép mở khóa đào tạo cho nhân sự | Phân tách  Làm cho đầy đủ | FEAT 7.1: Hệ thống cho phép phòng nhân sự mở khóa đào tạo cho cán bộ  FEAT 7.2: Hệ thống cho phép phòng nhân sự chỉnh sửa khóa đào tạo đã mở cho cán bộ  FEAT 7.3: Hệ thống cho phép phòng nhân sự xem thông tin khóa đào tạo đã mở cho cán bộ  FEAT 7.4: Hệ thống cho phép phòng nhân sự ghi nhận kết quả đánh giá cho cán bộ đã tham gia |
-| STRQ 8: Phòng nhân sự có thể cấu hình lương, loại phụ cấp, loại hợp đồng | Phân tách  Làm cho đầy đủ | FEAT 8.1: Hệ thống cho phép phòng nhân sự thêm mới hệ số lương (Hệ số lương được thêm sẽ được dùng để làm thông tin cho hồ sơ nhân sự)  FEAT 8.2: Hệ thống cho phép phòng nhân sự xóa hệ số lương khi không được hồ sơ nào sử dụng  FEAT 8.3: Hệ thống cho phép phòng nhân sự sửa thông tin hệ số lương  FEAT 8.4: Hệ thống cho phép phòng nhân sự ngừng sử dụng hệ số lương (Hệ số lương bị đánh dấu ngừng sử dụng sẽ không được hồ sơ mới sử dụng)  FEAT 8.2: Hệ thống cho phép phòng nhân sự thêm mới loại phụ cấp (Loại phụ cấp được thêm sẽ được dùng để làm thông tin cho hồ sơ nhân sự)  FEAT 8.6: Hệ thống cho phép phòng nhân sự sửa loại phụ cấp  FEAT 8.7: Hệ thống cho phép phòng nhân sự ngừng sử dụng loại phụ cấp (Loại phụ cấp bị đánh dấu ngừng sử dụng sẽ không được hồ sơ mới sử dụng)  FEAT 8.8: Hệ thống cho phép phòng nhân sự thêm mới loại hợp đồng (Loại hợp đồng được thêm sẽ được dùng để làm thông tin cho hợp đồng)  FEAT 8.9: Hệ thống cho phép phòng nhân sự sửa loại hợp đồng  FEAT 8.10: Hệ thống cho phép phòng nhân sự ngừng sử dụng loại hợp đồng (Loại hợp đồng bị đánh dấu ngừng sử dụng sẽ không được hợp đồng mới sử dụng) |
-| STRQ 9: Phòng tài chính muốn thống kê về nhân sự | Thêm các chi tiết | FEAT 9.1: Hệ thống cho phép phòng nhân sự và phòng tài chính xem các thống kê nhân sự: thống kê tổng quan nhân sự, biến động nhân sự, cơ cấu nhân sự theo đơn vị, đánh giá của cán bộ với khóa đào tạo, hợp đồng. |
-| STRQ 10 Người dùng phần mềm có thể xem hồ sơ cá nhân, xem thông tin đơn vị đang công tác | Phân tách | FEAT 10.1: Mọi người dùng trong hệ thống có thể xem thông tin cá nhân của mình  FEAT 10.2: Mọi người dùng có thể xem thông tin đơn vị mình đang công tác |
-| STRQ 11: Người dùng phần mềm có thể đăng ký khóa học được mở, xem các khóa học đã đăng ký | Phân tách | FEAT 11.1: Mọi người dùng trong hệ thống có thể đăng ký khóa đào tạo  FEAT 11.2: Mọi người dùng có thể đăng ký khóa đào tạo đã đăng ký |
+| STRQ 1, STRQ 2 | Phân tách và làm rõ | FEAT 1.1: Hệ thống có tài liệu giải thích design pattern. FEAT 1.2: Mỗi pattern được gắn với vấn đề sản phẩm cụ thể. |
+| STRQ 3 | Phân tách | FEAT 2.1: Người dùng gửi yêu cầu cho agent. FEAT 2.2: Người dùng lựa chọn mô hình và kiểu agent phù hợp. |
+| STRQ 4 | Làm cho đầy đủ | FEAT 3.1: Người dùng tiếp tục phiên làm việc gần nhất. FEAT 3.2: Người dùng mở lại phiên làm việc theo mã. FEAT 3.3: Người dùng tạo nhánh thử nghiệm từ phiên cũ. |
+| STRQ 5, STRQ 6 | Phân tách và ràng buộc | FEAT 4.1: Agent có thể đọc, chỉnh sửa hoặc hỗ trợ xử lý nội dung trong thư mục làm việc. FEAT 4.2: Hành động có rủi ro được kiểm tra trước khi thực hiện. |
+| STRQ 7 | Làm rõ | FEAT 5.1: Hệ thống có cấu hình vận hành. FEAT 5.2: Hệ thống có thông tin quan sát để phục vụ demo, debug và đánh giá. |
 
 ### **3.4. Ràng buộc và yêu cầu chất lượng**
 
 #### ***3.4.1. Ràng buộc***
 
-##### 1. Hạ tầng: Hệ thống phải vận hành trên hạ tầng máy chủ nội bộ (On-premise) hiện có của Trường Đại học Thủy lợi.
-##### 2. Pháp lý: Tuân thủ tuyệt đối Bộ Luật Lao động 2019, Luật Viên chức và các quy định về bảo mật dữ liệu cá nhân.
-##### 3. Tích hợp: Phải có khả năng kết nối (API hoặc Excel Export/Import) với phần mềm Kế toán và Đào tạo hiện có.
-##### 4. Ngôn ngữ: Giao diện và tài liệu 100% Tiếng Việt.
+##### 1. Hệ thống phải chạy được trên máy cá nhân của người dùng.
+##### 2. Người dùng phải tự cấu hình quyền truy cập tới dịch vụ mô hình AI.
+##### 3. Dữ liệu phiên làm việc được lưu cục bộ trong phạm vi dự án đang sử dụng.
+##### 4. Các thao tác trên tệp chỉ được thực hiện trong thư mục làm việc đã chọn.
+##### 5. Sản phẩm phải phù hợp cho demo môn học và có thể trình bày rõ design pattern.
 
 #### ***3.4.2. Yêu cầu chất lượng***
 
-##### 1. Hiệu năng: Hỗ trợ tối thiểu 200 người dùng đồng thời; Thời gian phản hồi trang thông thường dưới 2 giây.
-##### 2. Bảo mật: Phân quyền ở mức chức năng cho mỗi vai trò để bảo vệ thông tin nhạy cảm (Lương, SĐT, Địa chỉ,..).
-##### 3. Khả dụng: Đảm bảo hoạt động 99.2% trong giờ hành chính. Sao lưu dữ liệu tự động hàng ngày.
+##### 1. Khả năng bảo trì: Các trách nhiệm chính phải được tách rõ để dễ giải thích và sửa đổi.
+##### 2. Khả năng mở rộng: Có thể bổ sung mô hình, agent hoặc công cụ mới mà không phá vỡ luồng sử dụng chính.
+##### 3. An toàn: Các thao tác có khả năng ảnh hưởng đến thư mục làm việc phải được kiểm soát.
+##### 4. Khả năng kiểm thử: Các luồng quan trọng phải có tiêu chí kiểm tra rõ ràng.
+##### 5. Khả năng script hóa: Công cụ phải phù hợp với terminal, script và môi trường demo.
 
 ## **4. Tài liệu UseCase (UCS)**
 
 ### **4.1. Mục đích**
 
-Tài liệu Đặc tả Ca sử dụng (UCS) này nhằm mô tả chi tiết các tương tác giữa các tác nhân (Actors) như Quản trị viên, Cán bộ TCCB, Cán bộ TCKT với hệ thống HRMS. Đây là căn cứ quan trọng để:
-
-- Đội ngũ thiết kế xây dựng giao diện người dùng (UI/UX).
-- Đội ngũ lập trình nắm rõ luồng nghiệp vụ (Basic Flow, Alternative Flow) để thực hiện code.
-- Đội ngũ kiểm thử xây dựng các kịch bản kiểm thử (Test Cases) tương ứng.
+Tài liệu Use Case mô tả các tương tác chính giữa người dùng dòng lệnh và hệ thống ở mức sản phẩm. Đây là căn cứ để xác định phạm vi chức năng, tiêu chí kiểm thử và nội dung demo.
 
 ### **4.2. Phạm vi**
 
-Tài liệu này tập trung đặc tả các Use Case thuộc phạm vi của dự án, bao gồm:
+Tài liệu này tập trung đặc tả các use case thuộc phạm vi của dự án:
 
-- Hệ thống: Đăng nhập, Đăng xuất, Quản lý và Phân quyền người dùng.
-- Cấu hình: Quản lý lương, phụ cấp, hợp đồng.
-- Nghiệp vụ nhân sự: Quản lý hồ sơ, trình độ, chức danh, đánh giá, đào tạo và cơ cấu tổ chức.
+- Chạy một yêu cầu mới.
+- Tiếp tục phiên làm việc gần nhất.
+- Mở lại phiên làm việc theo mã.
+- Tạo nhánh từ phiên làm việc cũ.
+- Liệt kê các phiên đã lưu.
 
 ### **4.3. Sơ đồ UseCase**
 
-#### 4.3.1. Sơ đồ Use Case tổng quát
-
-#### 4.3.2. Sơ đồ phân rã Module Use Case
-
-*4.3.2.1. Quản lý tài khoản người dùng*
-
-*4.3.2.2. Quản lý cấu hình hệ số lương*
-
-*4.3.2.3. Quản lý cấu hình loại phụ cấp*
-
-*4.3.2.4. Quản lý cấu hình loại hợp đồng*
-
-*4.3.2.2. Quản lý hồ sơ nhân sự*
-
-*4.3.2.6. Quản lý đơn vị tổ chức nhân sự*
-
-*4.3.2.7. Quản lý khoá đào tạo*
+```mermaid
+flowchart LR
+    User["Người dùng dòng lệnh"] --> Run["Chạy yêu cầu mới"]
+    User --> Continue["Tiếp tục phiên gần nhất"]
+    User --> Load["Mở phiên theo mã"]
+    User --> Fork["Tạo nhánh phiên"]
+    User --> List["Liệt kê phiên đã lưu"]
+```
 
 ## **5. Kịch bản use case (UCS)**
 
-**5.1. Đặc tả use case: Đăng nhập**
+**5.1. Đặc tả use case: Chạy yêu cầu mới**
 
-| **Tên use case** | **Đăng nhập** |
+| **Tên use case** | **Chạy yêu cầu mới** |
 | --- | --- |
-| Tác nhân chính | Quản trị viên, Cán bộ TCCB, Cán bộ TCKT, Cán bộ nhân sự |
-| Mục đích (mô tả) | Cho phép người dùng xác thực và truy cập vào hệ thống dựa trên thông tin tài khoản được cấp. |
-| Mức độ ưu tiên  (Priority) | Bắt buộc |
-| Điều kiện kích hoạt  (Trigger) | Ấn “Đăng nhập” |
-| Điều kiện tiên quyết  (Precondition) | Người dùng đã được cấp tài khoản.  Hệ thống đang hoạt động bình thường. |
-| Điều kiện thành công  (Post-condition) | Người dùng được chuyển đến trang chủ (Dashboard) tương ứng với vai trò của mình. |
-| Điều kiện thất bại | Tác nhân đăng nhập vào tài khoản thất bại |
-| Luồng sự kiện chính  (Basic Flow) | 1.  Người dùng truy cập vào địa chỉ web của hệ thống.  2.  Hệ thống hiển thị màn hình Đăng nhập.  3.  Người dùng nhập `Tên đăng nhập` và `Mật khẩu`.  4.  Người dùng nhấn nút "Đăng nhập".  5.  Hệ thống kiểm tra tính hợp lệ của dữ liệu nhập (không được để trống).  6.  Hệ thống xác thực thông tin tài khoản với cơ sở dữ liệu.  7.  Hệ thống kiểm tra trạng thái tài khoản (Active/ Lock).  8.  Hệ thống xác định vai trò của người dùng.  9.  Hệ thống chuyển hướng người dùng đến Dashboard tương ứng. |
-| Luồng sự kiện thay thế  (Alternative Flow) | **A1: Đăng nhập khi đã có session**   1. Tại bước 1, Người dùng truy cập trang đăng nhập khi đã có session hợp lệ, 2. Hệ thống tự động chuyển hướng vào Dashboard. |
-| Luồng sự kiện ngoại lệ  (Exception Flow) | **E1: Sai Tên đăng nhập hoặc Mật khẩu**   1. Tại bước 6, hệ thống kiểm tra thông tin không khớp. 2. Hệ thống hiển thị thông báo "Tên đăng nhập hoặc mật khẩu không đúng". 3. Quay về bước 3   **E2: Tài khoản bị khóa**   1. Tại bước 7, nếu tài khoản bị khóa, 2. Hệ thống hiển thị thông báo "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên".   **E3: Không hợp lệ Tên đăng nhập hoặc Mật khẩu**   1. Tại bước 2, hệ thống kiểm tra không hợp lệ 2. Hệ thống hiển thị thông báo “Vui lòng nhập tên đăng nhập và mật khẩu hợp lệ” 3. Quay lại bước 3 |
+| Tác nhân chính | Người dùng dòng lệnh |
+| Mục đích | Khởi tạo một phiên làm việc mới, gửi yêu cầu tới agent và nhận kết quả cuối cùng. |
+| Mức độ ưu tiên | Bắt buộc |
+| Điều kiện kích hoạt | Người dùng nhập một yêu cầu mới cùng thông tin lựa chọn mô hình hoặc agent. |
+| Điều kiện tiên quyết | Cấu hình truy cập mô hình hợp lệ và thư mục làm việc tồn tại. |
+| Điều kiện thành công | Hệ thống trả kết quả, ghi nhận phiên làm việc và sẵn sàng cho lần tiếp theo. |
+| Điều kiện thất bại | Thiếu thông tin bắt buộc, cấu hình không hợp lệ hoặc mô hình không phản hồi. |
+| Luồng sự kiện chính | 1. Người dùng nhập yêu cầu. 2. Hệ thống kiểm tra yêu cầu. 3. Hệ thống chuẩn bị phiên làm việc. 4. Agent xử lý yêu cầu. 5. Hệ thống trả kết quả và lưu trạng thái. |
+| Luồng thay thế | Người dùng có thể truyền yêu cầu qua luồng nhập tự động thay vì nhập trực tiếp trong tham số. |
 
-**5.2. Đặc tả use case: Đăng xuất**
+**5.2. Đặc tả use case: Tiếp tục phiên làm việc gần nhất**
 
-| **Tên use case** | **Đăng xuất** |
+| **Tên use case** | **Tiếp tục phiên làm việc gần nhất** |
 | --- | --- |
-| Tác nhân chính | Quản trị viên, Cán bộ TCCB, Cán bộ TCKT, Cán bộ nhân sự |
-| Mục đích (mô tả) | Cho phép người dùng thoát khỏi phiên làm việc hiện tại một cách an toàn. |
-| Mức độ ưu tiên  (Priority) | Bắt buộc |
-| Điều kiện kích hoạt  (Trigger) | Ấn “Đăng xuất” |
-| Điều kiện tiên quyết  (Precondition) | Người dùng đang trong phiên đăng nhập hợp lệ. |
-| Điều kiện thành công  (Post-condition) | Phiên làm việc bị hủy bỏ.  Người dùng được chuyển về màn hình Đăng nhập. |
-| Điều kiện thất bại | Không có |
-| Luồng sự kiện chính  (Basic Flow) | 1. Người dùng chọn "Đăng xuất".  2. Hệ thống yêu cầu xác nhận đăng xuất  3. Người dùng xác nhận đăng xuất. Nếu chọn hủy thì qua E1  4. Hệ thống hủy session hiện tại.  5. Hệ thống chuyển hướng về trang Đăng nhập. |
-| Luồng sự kiện thay thế  (Alternative Flow) | **A1: Đăng xuất tự động**  1.  Hệ thống giám sát thời gian không hoạt động của người dùng.  2.  Nếu thời gian idle vượt quá **30 phút**  3.  Hệ thống tự động hủy session.  4.  Hệ thống hiển thị thông báo "Phiên làm việc đã hết hạn" và chuyển về trang Đăng nhập. |
-| Luồng sự kiện ngoại lệ  (Exception Flow) | E1: Người dùng không xác thực  1. Người dùng chọn Hủy  2. Kết thúc chức năng |
+| Tác nhân chính | Người dùng dòng lệnh |
+| Mục đích | Tiếp tục ngữ cảnh gần nhất mà không cần nhớ mã phiên. |
+| Mức độ ưu tiên | Bắt buộc |
+| Điều kiện kích hoạt | Người dùng yêu cầu hệ thống tiếp tục phiên gần nhất. |
+| Điều kiện tiên quyết | Đã từng có phiên làm việc được lưu trong phạm vi dự án. |
+| Điều kiện thành công | Yêu cầu mới được nối vào ngữ cảnh cũ và kết quả được lưu lại. |
+| Điều kiện thất bại | Không tồn tại phiên gần nhất hoặc phiên cũ không thể đọc được. |
+| Luồng sự kiện chính | 1. Người dùng chọn chế độ tiếp tục. 2. Hệ thống tìm phiên gần nhất. 3. Agent xử lý yêu cầu mới trên ngữ cảnh cũ. 4. Hệ thống cập nhật phiên. |
+
+**5.3. Đặc tả use case: Mở phiên làm việc theo mã**
+
+| **Tên use case** | **Mở phiên làm việc theo mã** |
+| --- | --- |
+| Tác nhân chính | Người dùng dòng lệnh |
+| Mục đích | Tiếp tục một phiên cụ thể khi người dùng biết mã phiên. |
+| Mức độ ưu tiên | Bắt buộc |
+| Điều kiện kích hoạt | Người dùng cung cấp mã phiên cần mở. |
+| Điều kiện tiên quyết | Mã phiên hợp lệ và phiên tồn tại. |
+| Điều kiện thành công | Hệ thống mở đúng phiên và xử lý yêu cầu mới. |
+| Điều kiện thất bại | Mã phiên sai, phiên không tồn tại hoặc dữ liệu phiên không đọc được. |
+| Luồng sự kiện chính | 1. Người dùng cung cấp mã phiên. 2. Hệ thống kiểm tra mã phiên. 3. Hệ thống khôi phục ngữ cảnh. 4. Agent xử lý yêu cầu mới. 5. Hệ thống cập nhật phiên. |
+
+**5.4. Đặc tả use case: Tạo nhánh từ phiên cũ**
+
+| **Tên use case** | **Tạo nhánh từ phiên cũ** |
+| --- | --- |
+| Tác nhân chính | Người dùng dòng lệnh |
+| Mục đích | Tạo một hướng thử nghiệm mới từ phiên cũ mà không làm thay đổi lịch sử ban đầu. |
+| Mức độ ưu tiên | Bắt buộc |
+| Điều kiện kích hoạt | Người dùng yêu cầu tạo nhánh từ phiên gần nhất hoặc phiên cụ thể. |
+| Điều kiện tiên quyết | Phiên nguồn tồn tại và có thể khôi phục. |
+| Điều kiện thành công | Một phiên mới được tạo với quan hệ tham chiếu tới phiên nguồn. |
+| Điều kiện thất bại | Không có phiên nguồn, mã phiên sai hoặc dữ liệu phiên nguồn không hợp lệ. |
+| Luồng sự kiện chính | 1. Người dùng chọn nguồn tạo nhánh. 2. Hệ thống khôi phục phiên nguồn. 3. Hệ thống tạo phiên mới từ dữ liệu cũ. 4. Agent xử lý yêu cầu trên nhánh mới. |
+
+**5.5. Đặc tả use case: Liệt kê các phiên đã lưu**
+
+| **Tên use case** | **Liệt kê các phiên đã lưu** |
+| --- | --- |
+| Tác nhân chính | Người dùng dòng lệnh |
+| Mục đích | Giúp người dùng xem các phiên đã có để tiếp tục hoặc tạo nhánh. |
+| Mức độ ưu tiên | Nên có |
+| Điều kiện kích hoạt | Người dùng yêu cầu xem danh sách phiên. |
+| Điều kiện tiên quyết | Thư mục làm việc có thể truy cập được. |
+| Điều kiện thành công | Hệ thống hiển thị danh sách phiên ở mức tóm tắt. |
+| Điều kiện thất bại | Không thể đọc dữ liệu phiên hoặc yêu cầu liệt kê bị kết hợp sai với chế độ chạy agent. |
+| Luồng sự kiện chính | 1. Người dùng yêu cầu liệt kê phiên. 2. Hệ thống đọc danh sách phiên. 3. Hệ thống hiển thị thông tin tóm tắt và kết thúc. |
 
 ## **6. Các yêu cầu phi chức năng**
 
 ### **6.1. Mục đích**
 
-Mục này xác định các tiêu chuẩn chất lượng, ràng buộc kỹ thuật và các điều kiện vận hành mà hệ thống HRMS phải đáp ứng. Các yêu cầu này đảm bảo hệ thống không chỉ hoạt động đúng về mặt nghiệp vụ mà còn phải nhanh, an toàn, dễ sử dụng và tuân thủ các quy định pháp luật hiện hành.
+Tài liệu yêu cầu phi chức năng mô tả các tiêu chí chất lượng mà **fantasticcode** cần đạt để có thể vận hành ổn định, an toàn và dễ bảo trì.
 
 ### **6.2. Phạm vi**
 
-Các yêu cầu phi chức năng trong tài liệu này áp dụng cho toàn bộ các thành phần của hệ thống Quản lý nhân sự, bao gồm:
-
-- Hiệu năng hoạt động: Yêu cầu về tốc độ và khả năng chịu tải.
-- Khả năng thích ứng: Liên quan đến khả năng phát triển lâu dài.
-- Tính tương thích: Khả năng kết nối với các phần mềm khác và hoạt động tốt trên nhiều môi trường khác nhau.
-- An toàn thông tin: Yêu cầu bảo vệ dữ liệu.
-- Độ tin cậy: Khả năng duy trì hoạt động và phục hồi.
-- Yêu cầu lưu trữ: Quy định về thời gian giữ dữ liệu.
-- Tính khả dụng: Mức độ dễ dùng và hài lòng.
+Yêu cầu phi chức năng áp dụng cho toàn bộ sản phẩm: trải nghiệm dòng lệnh, quản lý phiên làm việc, thao tác với thư mục dự án, khả năng quan sát, kiểm thử và tài liệu.
 
 ### **6.3. Chi tiết các yêu cầu phi chức năng**
 
-Hệ thống HRMS được thiết kế để đáp ứng đầy đủ 19 yêu cầu tiêu chuẩn về vận hành, an toàn và pháp lý như sau:
-
-| **Yếu tố chất lượng** | **Tiêu chuẩn đo lường** | **Tiêu chuẩn đáp ứng** |
+| **Nhóm yêu cầu** | **Yêu cầu** | **Mô tả** |
 | --- | --- | --- |
-| Hiệu năng hoạt động | Thời gian phản hồi hệ thống | Thời gian phản hồi trang thông thường dưới 2 giây. |
-| Hiệu năng hoạt động | Công suất tải hệ thống | Hệ thống hỗ trợ tối thiểu 200 người dùng truy cập đồng thời. |
-| Khả năng thích ứng | Kiến trúc hệ thống | Kiến trúc hệ thống hỗ trợ khả năng mở rộng linh hoạt khi quy mô người dùng tăng lên. |
-| Tính tương thích | Khả năng quản lý đa chi nhánh | Hệ thống hỗ trợ quản lý đa cơ sở (Hà Nội, Phố Hiến, TP.HCM) đồng nhất trên một nền tảng |
-| An toàn thông tin | Bảo mật lưu trữ mật khẩu | Mật khẩu người dùng phải được mã hóa trước khi lưu trữ vào cơ sở dữ liệu. |
-| An toàn thông tin | Kiểm soát quyền truy cập | Hệ thống phải đảm bảo kiểm tra quyền hạn ở mọi API để ngăn chặn tuyệt đối truy cập trái phép. |
-| An toàn thông tin | Bảo mật truyền tải dữ liệu | Dữ liệu nhạy cảm phải được mã hóa và truyền tải qua giao thức bảo mật HTTPS. |
-| An toàn thông tin | Khả năng phân tích và hậu kiểm | Hệ thống ghi nhật ký (log) tất cả các thao tác quan trọng của người dùng. |
-| An toàn thông tin | Quản lý phiên làm việc (Session) | Phiên làm việc tự động hết hạn (timeout) sau 30 phút nếu không có hoạt động. |
-| An toàn thông tin | Chính sách độ phức tạp mật khẩu | Mật khẩu tối thiểu 8 ký tự, bao gồm đầy đủ: chữ hoa, chữ thường và số. |
-| Độ tin cậy | Tính sẵn sàng của dịch vụ (Uptime) | Đảm bảo hệ thống hoạt động ổn định 99.2% trong khung giờ hành chính. |
-| Độ tin cậy | Tần suất và thời gian lưu trữ sao lưu | Sao lưu dữ liệu tự động hàng ngày và lưu trữ bản sao trong vòng 30 ngày. |
-| Độ tin cậy | Chỉ số phục hồi sự cố (RTO/RPO) | Thời gian phục hồi (RTO) dưới 4 giờ và điểm phục hồi (RPO) dưới 24 giờ. |
-| Yêu cầu lưu trữ | Khả năng lưu trữ hồ sơ lâu dài | Hệ thống có khả năng lưu trữ hồ sơ nhân sự an toàn trong thời gian tối thiểu 10 năm. |
-| Tính khả dụng | Giao diện và tính đáp ứng | Giao diện Tiếng Việt hoàn toàn, thân thiện và hiển thị tốt trên nhiều kích thước màn hình. |
-| Tính khả dụng | Thời gian học sử dụng | Người dùng có thể sử dụng hệ thống sau tối đa 4 giờ đào tạo hướng dẫn. |
-| Tính khả dụng | Khả năng khai thác | Cung cấp đầy đủ bộ tài liệu hướng dẫn sử dụng chi tiết cho từng vai trò người dùng. |
-| Tính khả dụng | Hỗ trợ thiết bị di động | Cổng Self-Service phải hỗ trợ tốt trên thiết bị di động và máy tính bảng. |
-| Tính tương thích | Tương tác liên thông dữ liệu | Dữ liệu xuất bản (export) phải tương thích hoàn toàn với định dạng của phần mềm kế toán. |
+| Khả dụng | Chạy cục bộ | Hệ thống phải chạy được trên máy của người dùng mà không cần máy chủ riêng. |
+| Hiệu năng | Phản hồi hợp lý | Các bước chuẩn bị trước khi gọi mô hình không được gây chậm đáng kể. |
+| Độ tin cậy | Duy trì phiên | Phiên làm việc phải có thể lưu, mở lại và phân nhánh một cách ổn định. |
+| An toàn tệp | Giới hạn phạm vi thao tác | Các thao tác trên tệp phải bị giới hạn trong thư mục làm việc được chọn. |
+| Bảo mật | Bảo vệ thông tin truy cập | Thông tin truy cập dịch vụ bên ngoài không được đưa trực tiếp vào tài liệu hoặc mã nguồn công khai. |
+| Khả năng quan sát | Theo dõi quá trình chạy | Hệ thống cần có thông tin giúp người dùng hiểu tác vụ đã chạy như thế nào. |
+| Khả năng kiểm thử | Tự động hóa kiểm tra | Các luồng chính phải có kiểm thử để phục vụ bàn giao và demo. |
 
 # **II. LẬP KẾ HOẠCH DỰ ÁN**
 
 ## **1. Bảng phân chia công việc**
 
-| **MSV** | **Họ và tên** |
-| --- | --- |
-| 2321170611 | Nguyễn Hồng Phúc |
-| 2321170631 | Ngô Quang Tùng |
-| 2321170609 | Nguyễn Hải Ninh |
-| 2321060422 | Ngô Đức Nam Khánh |
-| 2321170630 | Hoàng Tùng |
+| **MSSV** | **Họ và tên** | **Công việc phụ trách chính** | **Pattern giải thích** |
+| --- | --- | --- | --- |
+| 2321160070 | Nguyễn Hồng Phúc | Quản lý dự án, tài liệu và luồng quan sát | Facade, Observer |
+| 2321170631 | Ngô Quang Tùng | Tích hợp mô hình và cấu hình sản phẩm | Adapter, Factory Method |
+| 2321170443 | Nguyễn Hải Ninh | Công cụ agent và chính sách an toàn | Command, Chain of Responsibility |
+| 2321060422 | Ngô Đức Nam Khánh | Phiên làm việc và phân nhánh ngữ cảnh | Memento, Prototype |
+| 2321030285 | Hoàng Tùng | Hành vi lựa chọn phiên và vòng đời xử lý | Strategy, State |
 
 ## **2. Giới thiệu**
 
 ### **2.1. Mục tiêu dự án**
 
-#### 2.1.1. Mục tiêu tổng quát
+Mục tiêu của dự án là xây dựng một công cụ agent dòng lệnh nhỏ gọn, có thể dùng trong demo môn học, đồng thời minh họa cách design pattern hỗ trợ tổ chức một sản phẩm thực tế.
 
-- Xây dựng một hệ thống phần mềm quản lý nhân sự tập trung, thống nhất và toàn diện cho Trường Đại học Thủy lợi.
-- Thay thế các quy trình quản lý thủ công, rời rạc hiện tại bằng quy trình số hóa tự động.
-- Tạo ra một nguồn dữ liệu duy nhất về nhân sự.
-- Nâng cao hiệu quả quản lý hành chính, đảm bảo tính chính xác của dữ liệu lương thưởng.
-- Tuân thủ tuyệt đối các quy định pháp luật hiện hành.
+Các mục tiêu chính:
 
-#### 2.1.2. Mục tiêu cụ thể
-
-- Số hóa và Tập trung hóa dữ liệu nhân sự
-- Loại bỏ lưu trữ phân tán: Chuyển đổi toàn bộ hồ sơ nhân sự từ giấy tờ và các file Excel rời rạc sang cơ sở dữ liệu tập trung.
-- Quản lý hồ sơ toàn diện: Lưu trữ đầy đủ thông tin cá nhân, quá trình công tác, trình độ chuyên môn, bằng cấp, chứng chỉ, thông tin Đảng/Đoàn và quan hệ gia đình của hơn 1.200 cán bộ giảng viên.
-- Quản lý linh hoạt Cơ cấu tổ chức đặc thù
-- Mô hình phân cấp phức tạp: Quản lý được cơ cấu tổ chức đa cấp (Trường - Khoa/Viện - Bộ môn) và các đơn vị chức năng đặc thù của trường đại học.
-- Lưu vết lịch sử: Lịch sự biến đổi nhân sự trong cơ cấu tổ chức.
-- Tự động hóa quy trình Hợp đồng và Cảnh báo
-- Quản lý vòng đời hợp đồng: Giả lập một quy trình cho phép theo dõi chặt chẽ từ khi ký mới, thử việc, gia hạn đến khi chấm dứt hợp đồng hoặc nghỉ hưu.
-- Cảnh báo thông minh: Hệ thống tự động điều chỉnh trạng thái hợp đồng gửi cảnh báo cho Phòng Tổ chức Cán bộ về các mốc thời gian quan trọng.
-- Cung cấp nền tảng cấu hình nghiệp vụ động
-- Thích ứng với thay đổi luật: Cho phép Quản trị viên tự cấu hình các tham số như hệ số ngạch/bậc, định mức phụ cấp, hợp đồng mà không cần can thiệp vào mã nguồn và một số cấu hình mới trong tương lai.
-- Hỗ trợ dữ liệu tài chính chính xác
-- Chuẩn hóa dữ liệu lương: Cung cấp dữ liệu đầu vào chính xác (ngạch, bậc, hệ số, phụ cấp, người phụ thuộc, thông tin khen thưởng/kỷ luật) cho hệ thống kế toán để thực hiện chi trả lương và tính thuế thu nhập cá nhân.
-- Lưu ý: Hệ thống không trực tiếp tính bảng lương chi tiết mà đóng vai trò cung cấp dữ liệu nguồn tin cậy.
-- Nâng cao trải nghiệm người dùng qua Cổng tự phục vụ
-- Minh bạch thông tin: Cung cấp cổng thông tin tự phục vụ cho Cán bộ/Giảng viên để họ có thể tự tra cứu hồ sơ, lịch sử hợp đồng, và kết quả thi đua khen thưởng của chính mình.
-- Giảm tải hành chính: Cho phép nhân sự đăng ký đào tạo trực tuyến, giảm bớt thời gian đi lại và giấy tờ.
-- Hỗ trợ ra quyết định
-- Báo cáo thời gian thực: Cung cấp Dashboard tổng quan và các báo cáo thống kê tức thời về biến động nhân sự, cơ cấu trình độ, độ tuổi cho Ban Giám hiệu.
-- Tuân thủ Biểu mẫu: Xuất các báo cáo theo đúng Biểu mẫu quy định của Bộ Giáo dục và Đào tạo, Bộ Nông nghiệp và Phát triển Nông thôn và Bộ Nội vụ.
-
-#### 2.1.3. Phạm vi giới hạn của mục tiêu
-
-- Quản lý sinh viên và kết quả học tập.
-- Tính toán chi tiết và chi trả lương hàng tháng (chỉ quản lý tham số lương).
-- Quản lý nghiên cứu sinh và các hoạt động của phòng thí nghiệm chuyên sâu.
-- Đánh giá hiệu suất công việc chi tiết hàng tháng (chỉ quản lý kết quả đánh giá viên chức hàng năm).
-- Tạo quy trình đánh giá khen thưởng/kỷ luật.
-- Quản lý giờ giảng
+- Hỗ trợ người dùng gửi yêu cầu cho agent từ terminal hoặc script.
+- Cho phép lựa chọn mô hình và kiểu agent phù hợp với nhiệm vụ.
+- Cho phép tiếp tục, mở lại và phân nhánh phiên làm việc.
+- Hỗ trợ agent thao tác với thư mục dự án trong giới hạn an toàn.
+- Có tài liệu giải thích design pattern, kiểm thử và cách đóng gói sản phẩm.
 
 ### **2.2. Phạm vi dự án**
 
 #### 2.2.1. Phạm vi trong dự án
 
-- Quản lý hồ sơ nhân sự toàn diện bao gồm cán bộ, giảng viên và nhân viên.
-- Quản lý vòng đời hợp đồng lao động và tự động cảnh báo các mốc thời gian quan trọng như hết hạn hợp đồng.
-- Quản lý cơ cấu tổ chức theo mô hình phân cấp Khoa, Viện, Bộ môn và theo dõi lịch sử biến động của các đơn vị.
-- Quản lý hoạt động đào tạo và phát triển chuyên môn cho đội ngũ nhân sự.
-- Cấu hình tham số nghiệp vụ linh hoạt bao gồm mức lương, phụ cấp, hợp đồng.
-- Quản lý tổ chức nhân sự bao gồm các quy trình bổ nhiệm, miễn nhiệm và quản lý chức vụ tại các đơn vị nhân sự.
-- Cung cấp cổng thông tin tự phục vụ cho nhân viên để tra cứu hồ sơ và đăng ký khóa đào tạo.
-- Tổng hợp báo cáo và thống kê nhân sự phục vụ công tác quản lý và báo cáo cấp trên.
+- Phân tích yêu cầu và use case của công cụ agent dòng lệnh.
+- Thiết kế luồng xử lý sản phẩm và trải nghiệm người dùng.
+- Xây dựng cơ chế quản lý phiên làm việc.
+- Xây dựng nhóm công cụ hỗ trợ agent thao tác trong thư mục dự án.
+- Kiểm thử, đóng gói, viết tài liệu và chuẩn bị demo.
 
 #### 2.2.2. Phạm vi ngoài dự án
 
-- Quản lý thông tin và các hoạt động học tập của sinh viên.
-- Thực hiện tính toán và chi trả bảng lương chi tiết hàng tháng (hệ thống chỉ đóng vai trò cung cấp dữ liệu đầu vào cho bộ phận kế toán).
-- Quản lý các hoạt động đào tạo dành cho sinh viên.
-- Quản lý quy trình đánh giá hiệu suất và xếp loại viên chức hàng năm.
-- Quản lý đối tượng Nghiên cứu sinh.
-- Quản lý hoạt động, thiết bị và nhân sự chuyên trách của Phòng thí nghiệm.
-- Cấu hình chi tiết các tham số phức tạp liên quan đến Bảo hiểm và Thuế.
-- Quản lý phiên bản hóa đối với các cấu hình hệ thống.
-- Quản lý các thông tin chuyên môn sâu của giảng viên như lĩnh vực nghiên cứu chi tiết hay từ khóa chuyên ngành.
+- Giao diện web.
+- Giao diện terminal tương tác dạng toàn màn hình.
+- Hệ thống nhiều người dùng hoặc phân quyền tài khoản.
+- Đồng bộ phiên làm việc qua cloud.
+- Sandbox cấp hệ điều hành hoặc container.
 
 ## **3. Tổ chức dự án**
 
@@ -390,9 +318,9 @@ Hệ thống HRMS được thiết kế để đáp ứng đầy đủ 19 yêu c
 
 **Quản lý dự án:** Nguyễn Hồng Phúc
 
-**Nhóm phát triển dự án:**
+**Nhóm phát triển dự án:** Team Fantasticcode
 
-- Nguyễn Hồng Phúc:
+- Nguyễn Hồng Phúc
 - Ngô Quang Tùng
 - Nguyễn Hải Ninh
 - Ngô Đức Nam Khánh
@@ -402,21 +330,19 @@ Hệ thống HRMS được thiết kế để đáp ứng đầy đủ 19 yêu c
 
 | **Vai trò** | **Trách nhiệm** |
 | --- | --- |
-| Quản lý và lập kế hoạch dự án | Lập kế hoạch tổng thể, theo dõi tiến độ, điều phối công việc, đảm bảo dự án hoàn thành đúng mục tiêu. |
-| Phân tích yêu cầu khách hàng | Thu thập và phân tích yêu cầu, xây dựng tài liệu đặc tả. |
-| Phân tích và thiết kế hệ thống | Thiết kế kiến trúc hệ thống, cơ sở dữ liệu và giao diện người dùng. |
-| Lập trình viên | Phát triển các chức năng của hệ thống theo thiết kế. |
-| Kiểm thử | Kiểm tra chất lượng hệ thống, phát hiện và báo cáo lỗi. |
-| Người dùng cuối | Tham gia phản hồi, đánh giá hệ thống trong quá trình thử nghiệm. |
+| Quản lý và lập kế hoạch dự án | Lập kế hoạch, theo dõi tiến độ, điều phối phần pattern và tài liệu. |
+| Phân tích yêu cầu | Chuyển nhu cầu người dùng thành tài liệu STR/VIS/UCS. |
+| Thiết kế hệ thống | Thiết kế luồng sản phẩm, mô hình dữ liệu mức khái niệm và mapping design pattern. |
+| Lập trình viên | Hiện thực các chức năng chính theo phạm vi đã thống nhất. |
+| Kiểm thử | Thiết kế test, kiểm tra luồng chính, luồng lỗi và tiêu chí bàn giao. |
+| Viết tài liệu | Cập nhật tài liệu yêu cầu, thiết kế, pattern, sử dụng và triển khai. |
 
 ### **3.3. Phạm vi tài nguyên**
 
-- Draw.io để xây dựng sơ đồ gantt
-- StarUML để để vẽ các Biểu đồ UML
-- Figma để thiết kế giao diện
-- Selenium để kiểm thử
-- Các ngôn ngữ cho dự án: TypeScript
-- Môi trường lập trình: Visual Studio Code
+- Nhân sự: 5 thành viên trong một team.
+- Tài nguyên học thuật: kiến thức về phát triển dự án phần mềm, design pattern và kiểm thử.
+- Tài nguyên vận hành: máy cá nhân của nhóm và môi trường demo cục bộ.
+- Tài nguyên tài liệu: báo cáo phát triển dự án, hướng dẫn sử dụng và tài liệu thiết kế.
 
 ## **4. Phân tích rủi ro**
 
@@ -424,20 +350,17 @@ Hệ thống HRMS được thiết kế để đáp ứng đầy đủ 19 yêu c
 
 | **STT** | **Rủi ro** | **Xác suất** | **Tác động** | **Giải pháp** |
 | --- | --- | --- | --- | --- |
-| 1 | Thời gian yêu cầu để phát triển phần mềm bị ước lượng quá thấp | Cao | Nghiêm trọng | Chia nhỏ công việc, rà soát tiến độ định kỳ, điều chỉnh kế hoạch và phân công linh hoạt khi cần |
-| 2 | Chi phí phát triển ước tính quá thấp | Trung bình | Trung bình | Lập ngân sách dự phòng, theo dõi chi phí định kỳ, ưu tiên các hạng mục quan trọng |
-| 3 | Yêu cầu của khách hàng thay đổi liên tục | Thấp | Nghiêm trọng | Xác nhận yêu cầu từ sớm, quản lý thay đổi chặt chẽ, cập nhật tài liệu và đánh giá tác động khi có thay đổi |
-| 4 | Công nghệ sử dụng có khiếm khuyết hạn chế chức năng | Thấp | Trung bình | Đánh giá công nghệ từ sớm, thử nghiệm nguyên mẫu, chuẩn bị phương án thay thế |
-| 5 | Nhân sự chủ chốt không sẵn sàng trong giai đoạn quan trọng | Trung bình | Nghiêm trọng | Phân công chéo công việc, lưu trữ tài liệu đầy đủ, chuẩn bị nhân sự dự phòng |
-| 6 | Lỗi kỹ thuật nghiêm trọng làm chậm tiến độ bàn giao | Thấp | Nghiêm trọng | Thực hiện kiểm thử định kỳ, rà soát chất lượng mã nguồn, ưu tiên xử lý lỗi quan trọng |
-| 7 | Code chất lượng kém, khó bảo trì | Cao | Cao | Áp dụng coding standard, review code định kỳ, sử dụng công cụ kiểm soát chất lượng |
-| 8 | Máy chủ không đáp ứng được lượng truy cập tăng đột biến | Thấp | Thảm khốc | Lựa chọn hạ tầng có khả năng mở rộng, giám sát tài nguyên hệ thống, xây dựng kế hoạch sao lưu và khôi phục |
-| 9 | Mất dữ liệu do lỗi hệ thống hoặc thao tác sai | Thấp | Thảm khốc | Thiết lập cơ chế sao lưu tự động, kiểm tra khả năng phục hồi dữ liệu định kỳ |
-| 10 | Thiếu kinh nghiệm với công nghệ sử dụng | Trung bình | Trung bình | Đào tạo bổ sung, tham khảo tài liệu chính thức, phân công công việc phù hợp năng lực |
+| 1 | Hiểu sai phạm vi sản phẩm | Trung bình | Cao | Chốt phạm vi theo use case và cập nhật tài liệu khi có thay đổi. |
+| 2 | Kết nối dịch vụ mô hình bên ngoài không ổn định | Trung bình | Trung bình | Có kịch bản kiểm thử thay thế và thông báo lỗi rõ ràng cho người dùng. |
+| 3 | Tác vụ agent gây ảnh hưởng ngoài ý muốn tới thư mục dự án | Trung bình | Nghiêm trọng | Giới hạn phạm vi thao tác và kiểm tra rủi ro trước khi thực hiện. |
+| 4 | Dữ liệu phiên làm việc không được duy trì đúng | Thấp | Cao | Kiểm thử kỹ luồng tạo mới, tiếp tục, mở lại và phân nhánh phiên. |
+| 5 | Design pattern bị mô tả hình thức | Trung bình | Cao | Gắn từng pattern với vấn đề sản phẩm và ví dụ cài đặt cụ thể ở phần VI, VII. |
+| 6 | Thiếu kiểm thử cho luồng quan trọng | Trung bình | Trung bình | Lập danh sách test theo use case và kiểm tra trước khi bàn giao. |
+| 7 | Tài liệu quá kỹ thuật ở phần yêu cầu | Trung bình | Trung bình | Tách chi tiết triển khai sang phần VII, giữ I-V ở mức sản phẩm. |
 
 ### **4.2. Công thức tính độ rủi ro**
 
--Áp dụng quy trình phân tích rủi ro định tính dựa trên PMBOK guide:
+- Áp dụng phân tích rủi ro định tính: R = P x I.
 
 Gán điểm cho Xác suất (P):
 
@@ -452,448 +375,410 @@ Gán điểm cho Xác suất (P):
 - Trung bình: 2 điểm
 - Thấp: 1 điểm
 
-Công thức:R = P x I
-
 ### **4.3. Bảng tính toán cụ thể**
 
 | **STT** | **Rủi ro** | **P** | **I** | **Độ rủi ro (R)** | **Phân loại** |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Ước lượng thời gian quá thấp | 3 | 3 | 9 | Rủi ro rất cao |
-| 2 | Chi phí ước tính quá thấp | 2 | 2 | 4 | Trung bình |
-| 3 | Yêu cầu thay đổi liên tục | 1 | 3 | 3 | Thấp/Trung bình |
-| 4 | Công nghệ có khiếm khuyết | 1 | 2 | 2 | Thấp |
-| 5 | Nhân sự chủ chốt vắng mặt | 2 | 3 | 6 | Rủi ro cao |
-| 6 | Lỗi kỹ thuật chậm tiến độ | 1 | 3 | 3 | Thấp/Trung bình |
-| 7 | Code chất lượng kém | 3 | 3 | 9 | Rủi ro rất cao |
-| 8 | Máy chủ quá tải đột biến | 1 | 4 | 4 | Trung bình |
-| 9 | Mất dữ liệu hệ thống | 1 | 4 | 4 | Trung bình |
-| 10 | Thiếu kinh nghiệm công nghệ | 2 | 2 | 4 | Trung bình |
-
-- Nhóm đã áp dụng khả năng chịu đựng rủi ro và ngưỡng rủi ro trong chuẩn PMBOK và ISO 31000 và phân loại:
-
-+ Điểm 9 - 12 (Vùng Đỏ): Rủi ro nguy cấp. Cần có kế hoạch dự phòng cực kỳ chi tiết.
-
-+ Điểm 4 - 8 (Vùng Vàng): Rủi ro đáng chú ý. Cần theo dõi định kỳ.
-
-+ Điểm 1 - 3 (Vùng Xanh): Rủi ro thấp. Có thể chấp nhận được và chỉ cần xử lý khi nó xảy ra.
+| 1 | Hiểu sai phạm vi | 2 | 3 | 6 | Rủi ro cao |
+| 2 | Dịch vụ mô hình không ổn định | 2 | 2 | 4 | Trung bình |
+| 3 | Tác vụ ảnh hưởng ngoài ý muốn | 2 | 3 | 6 | Rủi ro cao |
+| 4 | Sai dữ liệu phiên | 1 | 3 | 3 | Thấp/Trung bình |
+| 5 | Pattern hình thức | 2 | 3 | 6 | Rủi ro cao |
+| 6 | Thiếu test quan trọng | 2 | 2 | 4 | Trung bình |
+| 7 | Tài liệu quá kỹ thuật | 2 | 2 | 4 | Trung bình |
 
 ### **4.4. Cơ sở xác định các tham số thời gian**
 
 #### ***4.4.1 Bảng chuyển đổi rủi ro thành thời gian dự phòng***
 
-**Ghi chú:**
-
-- tm (Khả thi nhất): Mục tiêu.
-- to (Lạc quan): Nếu rủi ro không xảy ra (R = 0).
-- tp (Bi quan): Nếu rủi ro xảy ra. tp = tm + (Điểm rủi ro trung bình của Team).
-
-**Áp dụng kỹ thuật kỹ thuật ước lượng Tham số:**
-
-- nhóm sử dụng thuật toán nhân hệ số rủi ro (Risk Factor) dựa trên kết quả của Bảng đánh giá rủi ro đã thực hiện ở chương trước:
-- nguyên tắc: tp = tm + (tm \* %RiskFactor) (Điểm rủi ro càng cao thì %RiskFactor càng lớn.)
-
-| **Mức độ rủi ro (R)** | **Phân loại** | **Hệ số bù giờ** | **Ý nghĩa** |
+| **Điểm Rủi ro (R)** | **Mức rủi ro** | **Dự phòng thời gian đề xuất** | **Ghi chú** |
 | --- | --- | --- | --- |
-| 1 - 3 | Thấp / Rất thấp | + 10% đến 20% | Cộng thêm khoảng 1 ngày. (Dành cho các lỗi nhỏ, fix nhanh). |
-| 4 - 2 | Trung bình | + 30% đến 50% | Cộng thêm khoảng 2 - 3.2 ngày. (Dành cho các sự cố mất dữ liệu, thiếu exp). |
-| 6 - 9 | Cao / Rất cao | + 60% đến 80% | Cộng thêm khoảng 4 - 6 ngày. (Dành cho sai estimate, vắng mặt key member). |
-| > 10 | Nghiêm trọng | + 100% (Gấp đôi) | Cộng thêm 7 ngày trở lên. (Vỡ kế hoạch, làm lại từ đầu). |
-
-####
-
-####
+| 1 - 2 | Thấp | +10% đến 20% | Theo dõi bình thường. |
+| 3 - 5 | Trung bình | +30% đến 50% | Cần thêm thời gian kiểm thử và sửa lỗi. |
+| 6 - 9 | Cao / Rất cao | +60% đến 80% | Cần dự phòng cho phạm vi, an toàn thao tác và tài liệu. |
 
 #### ***4.4.2. Bảng các yếu tố thuận lợi***
 
-Nguyên tắc: to = tm - (tm \* %Opportunity) (Yếu tố thuận lợi càng nhiều %Opportunity càng lớn.)
-
-| **STT** | **Yếu tố thuận lợi (Cơ hội)** | **Chi tiết áp dụng thực tế** | **Tác động cụ thể** | **Đội ngũ hưởng lợi** |
+| **STT** | **Yếu tố thuận lợi** | **Mô tả** | **Giảm thời gian** | **Áp dụng cho** |
 | --- | --- | --- | --- | --- |
-| 1 | Tái sử dụng tài nguyên có sẵn | - Có tài liệu khảo sát cũ tham khảo được ngay.  - Sử dụng các mẫu thiết kế (Design Patterns) có sẵn.  - Có sẵn các Module mẫu để tham khảo code.  - Tài liệu HDSD đã được soạn thảo một phần từ trước. | Giảm ~20-30% | Team 1  Team 2  Team 3  Team 5 |
-| 2 | Chất lượng bàn giao nội bộ tốt | - Tài liệu phân tích từ Team 1 chuyển sang cực kỳ rõ ràng.  - Team 2 bàn giao Database Design chuẩn.  - Team 3 code chắc tay, Unit Test tốt, ít lỗi logic. | Giảm ~12-33% | Team 2  Team 3  Team 4 |
-| 3 | Sự phản hồi từ Stakeholder (Khách hàng/GV) | - Khách hàng tại TLU phản hồi nhanh các thắc mắc.  - Sơ đồ Gantt và WBS được duyệt ngay, không phải sửa lại. | Giảm ~28-33% | Team 1 |
-| 4 | Hạ tầng kỹ thuật ổn định | - Môi trường Server TLU đã sẵn sàng.  - Không gặp lỗi cấu hình khi deploy. | Giảm ~30% | Team 5 |
+| 1 | Dự án nhỏ, phạm vi rõ | Không có giao diện phức tạp, tập trung vào công cụ dòng lệnh. | Giảm 20% | Phân tích, lập trình |
+| 2 | Pattern đã được phân công | Mỗi thành viên phụ trách nhóm pattern cụ thể. | Giảm 15% | Thiết kế, tài liệu |
+| 3 | Có thể kiểm thử tự động | Các luồng chính có thể lặp lại trong môi trường cục bộ. | Giảm 30% | Lập trình, kiểm thử |
+| 4 | Không cần máy chủ riêng | Sản phẩm phục vụ demo cục bộ nên giảm chi phí triển khai. | Giảm 15% | Triển khai, demo |
 
 ## **5. Lập lịch dự án sử dụng phương pháp PERT/CPM**
 
 ### **5.1. Công thức liên kết rủi ro**
 
-#### ***5.1.1. Team 1: Tìm hiểu yêu cầu khách hàng và lập kế hoạch dự án (tm = 12 ngày)***
+#### ***5.1.1. Tìm hiểu yêu cầu và lập kế hoạch dự án (tm = 4 ngày)***
 
-+ Công việc A:Thu thập yêu cầu (tm = 4 ngày)
+- to: 3 ngày nếu yêu cầu ổn định.
+- tm: 4 ngày.
+- tp: 6 ngày nếu phải chỉnh phạm vi tài liệu nhiều lần.
 
-- to (Lạc quan): 2 ngày (Nếu khách hàng tại TLU phản hồi nhanh, tài liệu cũ có sẵn).
-- tp (Bi quan): 8 ngày (Vì rủi ro số 1 về ước lượng quá thấp là Cao, và khách hàng có thể thay đổi yêu cầu).
+te = (3 + 4 x 4 + 6) / 6 = 4.17 ngày
 
-+ Công việc B: Phân tích yêu cầu(tm = 5 ngày)
+#### ***5.1.2. Phân tích, đặc tả và thiết kế mức sản phẩm (tm = 6 ngày)***
 
-- to (Lạc quan): 3 ngày (Nếu các tài liệu từ Team 1 cực kỳ rõ ràng).
-- tp (Bi quan): 9 ngày (Nếu phát hiện các yêu cầu mâu thuẫn nhau trong các Needs).
+- to: 4 ngày nếu use case rõ ràng.
+- tm: 6 ngày.
+- tp: 10 ngày nếu phải thay đổi phạm vi hoặc bổ sung nhiều luồng sản phẩm.
 
-+ Công việc C: Lập kế hoạch (tm = 2 ngày)
+te = (4 + 4 x 6 + 10) / 6 = 6.33 ngày
 
-- to (Lạc quan): 1 ngày (Nếu sơ đồ Gantt và WBS được duyệt ngay).
-- tp (Bi quan): 4 ngày (Nếu phải điều chỉnh lại nguồn lực nhiều lần).
+#### ***5.1.3. Lập trình và tích hợp chức năng (tm = 12 ngày)***
 
-Áp dụng công thức phân phối xác suất Beta te = $ \frac{(to + 4tm + tp)}{6}$ :
+- to: 8 ngày nếu các thành phần độc lập rõ.
+- tm: 12 ngày.
+- tp: 18 ngày nếu phát sinh lỗi tích hợp hoặc thay đổi yêu cầu.
 
-Với công việc A:
+te = (8 + 4 x 12 + 18) / 6 = 12.33 ngày
 
-- te(A) = = 4.33 ngày
+#### ***5.1.4. Kiểm thử (tm = 5 ngày)***
 
-Với công việc B:
+- to: 3 ngày nếu các luồng chính ổn định.
+- tm: 5 ngày.
+- tp: 8 ngày nếu phát sinh lỗi ở nhiều use case.
 
-- te(B) = ngày
+te = (3 + 4 x 5 + 8) / 6 = 5.17 ngày
 
-Với công việc C:
+#### ***5.1.5. Đóng gói, demo và viết tài liệu (tm = 4 ngày)***
 
-- te(B) = = 2.17 ngày
+- to: 3 ngày.
+- tm: 4 ngày.
+- tp: 7 ngày nếu phải chỉnh tài liệu theo phản hồi.
 
-=> tổng thời gian kì vọng của team 1 là ~11.83 ngày
-
-#### ***5.1.2. Team 2: Phân tích, đặc tả và thiết kế*** ***(tm = 11 ngày)***
-
-- to (Lạc quan): 7 ngày (Nếu nhóm sử dụng các mẫu thiết kế có sẵn).
-- tp (Bi quan): 18 ngày (Do rủi ro số 10 - thiếu kinh nghiệm công nghệ và rủi ro số 3 - khách hàng thay đổi yêu cầu).
-
-Áp dụng công thức te = $ \frac{(to + 4tm + tp)}{6}$ :
-
-Thời gian kỳ vọng (te):
-
-- te(D) = = 11.5 ngày
-
-#### ***5.1.3. Team 3: Lập trình (tm = 26 ngày)***
-
-- to (Lạc quan): 20 ngày (Nếu Team 2 bàn giao Database Design chuẩn và Team 3 đã có sẵn các Module mẫu để tham khảo).
-- tp (Bi quan): 38 ngày (Nếu phát sinh lỗi nghiêm trọng ở Module Lương hoặc Cấu hình hệ thống, cộng với việc thiếu kinh nghiệm về công nghệ mới).
-
-Áp dụng công thức te = $ \frac{(to + 4tm + tp)}{6}$ :
-
-Thời gian kỳ vọng (te):
-
-- te = = 27 ngày
-
-#### ***5.1.4. Team 4: Kiểm thử (tm = 14 ngày)***
-
-- to (Lạc quan): 10 ngày (Nếu Team 3 code chắc tay, Unit Test tốt và không phát hiện lỗi logic nghiêm trọng).
-- tp (Bi quan): 24 ngày (Nếu phát hiện lỗi "thảm khốc", buộc phải trả về cho Team 3 sửa lại toàn bộ).
-
-Thời gian kỳ vọng (te):
-
-- te = = 15 ngày
-
-#### ***5.1.5. Team 5: Đóng gói, triển khai và viết tài liệu (tm = 8 ngày)***
-
-- to (Lạc quan):5 ngày (Nếu môi trường server TLU đã sẵn sàng, không lỗi cấu hình và các tài liệu hướng dẫn đã được soạn thảo một phần từ các bước trước).
-- tp (Bi quan):14 ngày (Nếu xảy ra lỗi server thảm khốc, mất dữ liệu khi import hoặc tài liệu HDSD bị trả lại do thiếu chi tiết).
-
-Thời gian kỳ vọng (te):
-
-- te = = 8.5 ngày
+te = (3 + 4 x 4 + 7) / 6 = 4.33 ngày
 
 ### **5.2. Bảng danh mục công việc**
 
-| **Mã** | **Tên công việc** | **Tg** | **CV trước** | **ES** | **EF** | **LS** | **LF** | **Slack** |
+| **STT** | **Công việc** | **Thời gian (ngày)** | **Phụ thuộc** | **ES** | **EF** | **LS** | **LF** | **Slack** |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1.1 | Xây dựng Kế hoạch quản lý yêu cầu | 1 |  | 1 | 1 | 1 | 1 | 0 |
-| 1.2 | Khảo sát và thu thập yêu cầu | 2 | 1.1 | 2 | 3 | 2 | 3 | 0 |
-| 1.3 | Lập tài liệu Yêu cầu và Tầm nhìn | 2 | 1.2 | 4 | 5 | 4 | 5 | 0 |
-| 1.4 | Phân tích tính năng phần mềm | 1 | 1.3 | 6 | 6 | 6 | 6 | 0 |
-| 1.5 | Thiết kế Sơ đồ Use Case tổng quát | 1 | 1.4 | 7 | 7 | 9 | 9 | 2 |
-| 1.6 | Viết kịch bản Use Case chi tiết | 3 | 1.5 | 8 | 10 | 36 | 38 | 28 |
-| 1.7 | Xác định yêu cầu phi chức năng | 1 | 1.4 | 7 | 7 | 38 | 38 | 31 |
-| 1.8 | Tổng hợp Đặc tả Yêu cầu SRS | 1 | 1.6, 1.7 | 11 | 11 | 39 | 39 | 28 |
-| 1.9 | Đánh giá rủi ro và lập dự phòng | 1 | 1.8 | 12 | 12 | 54 | 54 | 42 |
-| 1.10 | Lập lịch trình dự án | 1 | 1.9 | 13 | 13 | 55 | 55 | 42 |
-| 2.1 | Thiết kế Kiến trúc hệ thống | 2 | 1.4 | 7 | 8 | 7 | 8 | 0 |
-| 2.2 | Mô hình hóa hệ thống nâng cao | 3 | 2.1 | 9 | 11 | 9 | 11 | 0 |
-| 2.3 | Thiết kế cơ sở dữ liệu | 4 | 2.2 | 12 | 15 | 12 | 15 | 0 |
-| 2.4 | Thiết kế giao diện UI UX | 4 | 1.5 | 8 | 11 | 10 | 13 | 2 |
-| 2.5 | Chuẩn hóa Design System | 2 | 2.4 | 12 | 13 | 14 | 15 | 2 |
-| 2.6 | Thiết kế đặc tả API | 2 | 2.3, 2.5 | 16 | 17 | 16 | 17 | 0 |
-| 3.1 | Thiết lập môi trường phát triển | 2 | 2.1 | 9 | 10 | 16 | 17 | 7 |
-| 3.2 | Xây dựng CSDL và migration | 2 | 2.3 | 16 | 17 | 16 | 17 | 0 |
-| 3.3 | Code module Đăng nhập và Phân quyền | 3 | 3.1, 3.2, 2.6 | 18 | 20 | 18 | 20 | 0 |
-| 3.4 | Code module Danh mục | 4 | 3.3 | 21 | 24 | 21 | 24 | 0 |
-| 3.5 | Code module Cơ cấu tổ chức | 4 | 3.4 | 25 | 28 | 25 | 28 | 0 |
-| 3.6 | Code module Hồ sơ nhân sự | 6 | 3.5 | 29 | 34 | 29 | 34 | 0 |
-| 3.7 | Code module Đào tạo | 4 | 3.6 | 35 | 38 | 35 | 38 | 0 |
-| 3.8 | Code Cổng thông tin nội bộ | 4 | 3.7 | 39 | 42 | 39 | 42 | 0 |
-| 3.9 | Tích hợp Báo cáo thống kê | 3 | 3.8 | 43 | 45 | 43 | 45 | 0 |
-| 3.10 | Thực hiện Unit Test | 2 | 3.9 | 46 | 47 | 46 | 47 | 0 |
-| 4.1 | Lập Kế hoạch kiểm thử | 2 | 1.8 | 12 | 13 | 40 | 41 | 28 |
-| 4.2 | Viết kịch bản kiểm thử | 4 | 4.1 | 14 | 17 | 42 | 45 | 28 |
-| 4.3 | Kiểm thử chức năng | 2 | 4.2, 3.9 | 46 | 47 | 46 | 47 | 0 |
-| 4.4 | Kiểm thử giao diện | 2 | 4.3 | 48 | 49 | 49 | 50 | 1 |
-| 4.5 | Kiểm thử hiệu năng | 2 | 4.3 | 48 | 49 | 48 | 49 | 0 |
-| 4.6 | Kiểm thử bảo mật | 2 | 4.3 | 48 | 49 | 48 | 49 | 0 |
-| 4.7 | Test hồi quy và Fix Bug | 2 | 4.5, 4.6, 3.10 | 50 | 51 | 50 | 51 | 0 |
-| 5.1 | Chuẩn bị máy chủ | 2 | 3.10 | 48 | 49 | 48 | 49 | 0 |
-| 5.2 | Thiết lập quy trình CI CD | 2 | 5.1 | 50 | 51 | 50 | 51 | 0 |
-| 5.3 | Viết tài liệu Hướng dẫn | 3 | 4.4 | 50 | 52 | 51 | 53 | 1 |
-| 5.4 | Đóng gói và Deploy | 2 | 4.7, 5.2 | 52 | 53 | 52 | 53 | 0 |
-| 5.5 | Đào tạo chuyển giao | 2 | 5.3, 5.4 | 54 | 55 | 54 | 55 | 0 |
-
-###
+| 1.1 | Thu thập yêu cầu và xác định phạm vi | 2 | - | 0 | 2 | 0 | 2 | 0 |
+| 1.2 | Lập kế hoạch và phân công pattern | 2 | 1.1 | 2 | 4 | 2 | 4 | 0 |
+| 2.1 | Thiết kế use case sản phẩm | 2 | 1.2 | 4 | 6 | 4 | 6 | 0 |
+| 2.2 | Thiết kế mô hình xử lý mức khái niệm | 2 | 2.1 | 6 | 8 | 6 | 8 | 0 |
+| 2.3 | Thiết kế quản lý phiên làm việc | 2 | 2.1 | 7 | 8 | 9 | 10 | 2 |
+| 3.1 | Cài đặt khung chạy dòng lệnh | 2 | 2.2 | 8 | 10 | 8 | 10 | 0 |
+| 3.2 | Cài đặt tích hợp mô hình | 3 | 3.1 | 11 | 13 | 11 | 13 | 0 |
+| 3.3 | Cài đặt quản lý phiên | 3 | 2.3, 3.1 | 11 | 13 | 11 | 13 | 0 |
+| 3.4 | Cài đặt công cụ và chính sách an toàn | 3 | 3.1 | 13 | 15 | 13 | 15 | 0 |
+| 3.5 | Tích hợp luồng chạy agent | 3 | 3.2, 3.3, 3.4 | 15 | 18 | 15 | 18 | 0 |
+| 4.1 | Viết test theo use case | 3 | 3.5 | 18 | 21 | 18 | 21 | 0 |
+| 4.2 | Kiểm thử tích hợp và sửa lỗi | 2 | 4.1 | 21 | 23 | 21 | 23 | 0 |
+| 5.1 | Đóng gói và cập nhật hướng dẫn | 2 | 4.2 | 23 | 25 | 23 | 25 | 0 |
+| 5.2 | Hoàn thiện development doc | 2 | 5.1 | 25 | 27 | 25 | 27 | 0 |
 
 ### **5.3. Sơ đồ Gantt**
 
-### **![Image: image_010](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_010.png)**
-
-###
+```mermaid
+gantt
+    title Kế hoạch dự án Fantasticcode
+    dateFormat  YYYY-MM-DD
+    section Khởi động
+    Thu thập yêu cầu              :a1, 2026-05-01, 2d
+    Lập kế hoạch                  :a2, after a1, 2d
+    section Phân tích thiết kế
+    Use case sản phẩm             :b1, after a2, 2d
+    Mô hình xử lý                 :b2, after b1, 2d
+    Quản lý phiên                 :b3, after b1, 2d
+    section Lập trình
+    Khung dòng lệnh               :c1, after b2, 2d
+    Tích hợp mô hình              :c2, after c1, 3d
+    Công cụ và an toàn            :c3, after c1, 3d
+    Luồng chạy agent              :c4, after c3, 3d
+    section Kiểm thử và tài liệu
+    Test use case                 :d1, after c4, 3d
+    Test tích hợp                 :d2, after d1, 2d
+    Hướng dẫn sử dụng             :e1, after d2, 2d
+    Development doc               :e2, after e1, 2d
+```
 
 ### **5.4. Đường găng**
 
-![Image: image_011](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_011.png)
+```mermaid
+flowchart LR
+    A["1.1 Yêu cầu"] --> B["1.2 Kế hoạch"]
+    B --> C["2.1 Use case"]
+    C --> D["2.2 Mô hình xử lý"]
+    D --> E["3.1 Khung dòng lệnh"]
+    E --> F["3.4 Công cụ và an toàn"]
+    F --> G["3.2 Tích hợp mô hình"]
+    G --> H["3.5 Luồng chạy agent"]
+    H --> I["4.1 Test use case"]
+    I --> J["4.2 Test tích hợp"]
+    J --> K["5.1 Hướng dẫn"]
+    K --> L["5.2 Development doc"]
+```
 
 # **III. PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG**
 
-# **1. Biểu đồ hoạt động**
+## **1. Biểu đồ hoạt động**
 
-## **1.1. Biểu đồ hoạt đông UC: Đăng nhập**
+### **1.1. Biểu đồ hoạt động UC: Chạy yêu cầu mới**
 
-**![Image: image_012](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_012.png)**
+```mermaid
+flowchart TD
+    Start([Bắt đầu]) --> Input["Người dùng nhập yêu cầu"]
+    Input --> Check["Hệ thống kiểm tra thông tin đầu vào"]
+    Check --> Session["Khởi tạo phiên làm việc"]
+    Session --> Agent["Agent xử lý yêu cầu"]
+    Agent --> NeedAction{"Cần thao tác phụ trợ?"}
+    NeedAction -- Có --> Policy["Kiểm tra chính sách an toàn"]
+    Policy --> Agent
+    NeedAction -- Không --> Save["Ghi nhận kết quả và ngữ cảnh"]
+    Save --> Output["Trả kết quả cho người dùng"]
+    Output --> End([Kết thúc])
+```
 
-## **1.2. Biểu đồ hoạt đông UC: Đăng xuất**
+### **1.2. Biểu đồ hoạt động UC: Tiếp tục phiên gần nhất**
 
-**![Image: image_013](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_013.png)**
+```mermaid
+flowchart TD
+    Start([Bắt đầu]) --> Request["Người dùng yêu cầu tiếp tục"]
+    Request --> Latest{"Có phiên gần nhất?"}
+    Latest -- Không --> Error["Thông báo không có phiên phù hợp"]
+    Latest -- Có --> Restore["Khôi phục ngữ cảnh"]
+    Restore --> Agent["Agent xử lý yêu cầu mới"]
+    Agent --> Save["Cập nhật phiên"]
+    Save --> End([Kết thúc])
+```
 
-# **2. Biểu đồ tuần tự**
+### **1.3. Biểu đồ hoạt động UC: Mở phiên theo mã**
 
-## **2.1. Biểu đồ tuần tự use case: Đăng nhập**
+```mermaid
+flowchart TD
+    Start([Bắt đầu]) --> Input["Người dùng cung cấp mã phiên"]
+    Input --> Valid{"Mã phiên hợp lệ?"}
+    Valid -- Không --> Error["Thông báo lỗi"]
+    Valid -- Có --> Exists{"Phiên tồn tại?"}
+    Exists -- Không --> NotFound["Thông báo không tìm thấy"]
+    Exists -- Có --> Restore["Khôi phục phiên"]
+    Restore --> Agent["Agent xử lý yêu cầu mới"]
+    Agent --> Save["Cập nhật phiên"]
+    Save --> End([Kết thúc])
+```
 
-![Image: image_054](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_054.png)
+### **1.4. Biểu đồ hoạt động UC: Tạo nhánh phiên**
 
-## **2.2. Biểu đồ tuần tự use case: Đăng xuất**
+```mermaid
+flowchart TD
+    Start([Bắt đầu]) --> Source["Chọn phiên nguồn"]
+    Source --> Exists{"Phiên nguồn hợp lệ?"}
+    Exists -- Không --> Error["Thông báo lỗi"]
+    Exists -- Có --> Clone["Tạo phiên mới từ phiên nguồn"]
+    Clone --> Agent["Agent xử lý trên nhánh mới"]
+    Agent --> Save["Lưu nhánh mới"]
+    Save --> End([Kết thúc])
+```
 
-![Image: image_055](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_055.png)
+### **1.5. Biểu đồ hoạt động UC: Liệt kê phiên đã lưu**
 
-# **3. Thiết kế cơ sở dữ liệu**
+```mermaid
+flowchart TD
+    Start([Bắt đầu]) --> Request["Người dùng yêu cầu liệt kê phiên"]
+    Request --> Read["Hệ thống đọc danh sách phiên"]
+    Read --> Empty{"Có phiên nào không?"}
+    Empty -- Không --> EmptyResult["Hiển thị danh sách rỗng"]
+    Empty -- Có --> Print["Hiển thị thông tin tóm tắt"]
+    EmptyResult --> End([Kết thúc])
+    Print --> End
+```
 
-![Image: image_086](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_086.png)
+## **2. Biểu đồ tuần tự**
 
-*Mô hình ERD*
+### **2.1. Biểu đồ tuần tự use case: Chạy agent**
 
-## **3.1. Xác định thực thể:**
+```mermaid
+sequenceDiagram
+    actor User as Người dùng
+    participant CLI as Giao diện dòng lệnh
+    participant Core as Lõi xử lý agent
+    participant AI as Dịch vụ mô hình AI
+    participant Tool as Công cụ phụ trợ
+    participant Store as Lưu trữ phiên
+    User->>CLI: Nhập yêu cầu
+    CLI->>Core: Gửi yêu cầu đã chuẩn hóa
+    Core->>Store: Tạo hoặc khôi phục phiên
+    Core->>AI: Gửi ngữ cảnh và yêu cầu
+    AI-->>Core: Trả phản hồi hoặc yêu cầu thao tác
+    alt Cần thao tác phụ trợ
+        Core->>Tool: Kiểm tra và thực hiện thao tác
+        Tool-->>Core: Trả kết quả thao tác
+        Core->>AI: Gửi kết quả thao tác để tiếp tục xử lý
+    end
+    Core->>Store: Lưu ngữ cảnh mới
+    Core-->>CLI: Trả kết quả cuối cùng
+    CLI-->>User: Hiển thị kết quả
+```
 
-### 3.1.1. Thực thể và thuộc tính:
+### **2.2. Biểu đồ tuần tự use case: Tạo nhánh phiên**
 
-- NhanSu(maCanBo, hoTen, ngaySinh, gioiTinh, soCCCD, queQuan, diaChi, maSoThue,soBHXH,soBHYT, email, soDienThoai, anhChanDung, tinhDoVanHoa, trinhDoDaoTao,chucDanhNgheNghiep,chucDanhKhoaHoc,laNguoiNuocNgoai, trangThaiLamViec, trangThaiHopDong)
-- TaiKhoan(email, matKhau, vaiTro, trangThaiTaiKhoan,maCanBo)
-- DonViToChuc(maDonVi, tenDonVi, loaiDonVi, diaChi, diaChiVanPhong, email, soDienThoai, laDonViNut, website, trangThai,maCanBo)
-- QuyetDinhDonVi(soQuyetDinh, ngayHieuLuc, ngayQuyetDinh, loaiSuKien, lyDo, fileDinhKem,maCanBo)
-- ThongTinNguoiNuocNgoai(soVisa, soHoChieu, ngayHetHanVisa, ngayHetHanHoChieu, soGiayPhepLaoDong, ngayHetHanGPLD, fileGPLD,maCanBo)
+```mermaid
+sequenceDiagram
+    actor User as Người dùng
+    participant CLI as Giao diện dòng lệnh
+    participant Core as Lõi xử lý agent
+    participant Store as Lưu trữ phiên
+    User->>CLI: Yêu cầu tạo nhánh từ phiên cũ
+    CLI->>Core: Gửi thông tin phiên nguồn
+    Core->>Store: Khôi phục phiên nguồn
+    Store-->>Core: Trả dữ liệu phiên nguồn
+    Core->>Store: Tạo phiên mới từ dữ liệu nguồn
+    Store-->>Core: Trả phiên mới
+    Core-->>CLI: Thông báo sẵn sàng xử lý trên nhánh mới
+```
 
-### 3.1.2. Xác định mối liên hệ:
+## **3. Thiết kế dữ liệu mức khái niệm**
 
-**Nhân sự - Có - Tài khoản: là kiểu liên kết 1:1**
+```mermaid
+erDiagram
+    WORK_SESSION ||--o{ SESSION_MESSAGE : contains
+    WORK_SESSION ||--o{ WORK_SESSION : forks
+    WORK_SESSION ||--o{ LATEST_POINTER : selected_as_latest
+    WORK_SESSION {
+        string session_id
+        string parent_session_id
+        string agent_type
+        string model_choice
+        string created_at
+        string updated_at
+    }
+    SESSION_MESSAGE {
+        string session_id
+        number position
+        string content
+    }
+    LATEST_POINTER {
+        string scope
+        string session_id
+    }
+```
 
-- Mỗi nhân sự (Cán bộ) được cấp một tài khoản duy nhất để truy cập hệ thống thông qua Email công vụ, và một tài khoản chỉ thuộc về một nhân sự nhất định.
-- Lực lượng tham gia của Nhân sự là bộ phận (có những nhân sự chưa được cấp hoặc không cần dùng tài khoản hệ thống).
-- Lực lượng tham gia của Tài khoản là toàn bộ (mọi tài khoản sinh ra phải gắn với một nhân sự cụ thể).
+### **3.1. Thực thể chính**
 
-**Nhân sự - Được bổ nhiệm vào - Đơn vị tổ chức: là kiểu liên kết 1:N**
+- **Phiên làm việc:** đại diện cho một luồng hội thoại hoặc tác vụ agent.
+- **Thông điệp phiên:** lưu các bước trao đổi trong phiên theo thứ tự.
+- **Con trỏ phiên gần nhất:** giúp hệ thống biết phiên nào cần tiếp tục khi người dùng không nhập mã cụ thể.
+- **Cấu hình agent:** mô tả kiểu hành vi mà agent sẽ sử dụng cho tác vụ.
+- **Cấu hình mô hình:** mô tả lựa chọn mô hình AI ở mức sản phẩm.
 
-- Một Đơn vị có thể quản lý nhiều nhân sự, nhưng mỗi nhân sự tại một thời điểm chỉ thuộc về một đơn vị công tác.
-- Lực lượng tham gia của Đơn vị là bộ phận (đơn vị mới thành lập hoặc đơn vị quản lý cấp cao có thể chưa có nhân viên trực thuộc).
-- Lực lượng tham gia của Nhân sự là toàn bộ (bất kỳ cán bộ nào khi vào làm việc đều phải được biên chế vào một đơn vị).
+### **3.2. Mối liên hệ dữ liệu**
 
-**Đơn vị Tổ chức - Có - Quyết định Đơn vị: là kiểu liên kết 1:N**
+| **Mối liên hệ** | **Kiểu liên kết** | **Mô tả** |
+| --- | --- | --- |
+| Phiên làm việc - Thông điệp phiên | 1 - N | Một phiên chứa nhiều thông điệp theo thứ tự. |
+| Phiên làm việc - Phiên làm việc | 1 - N | Một phiên nguồn có thể sinh nhiều phiên nhánh. |
+| Con trỏ phiên gần nhất - Phiên làm việc | N - 1 | Mỗi phạm vi làm việc có thể trỏ tới một phiên gần nhất. |
 
-- Một đơn vị có thể trải qua nhiều sự kiện pháp lý (thành lập, sáp nhập, đổi tên) tương ứng với nhiều quyết định, nhưng một quyết định chỉ áp dụng cho một đơn vị duy nhất.
-- Lực lượng tham gia của Đơn vị là bộ phận (có những đơn vị ổn định, chưa phát sinh quyết định thay đổi nào).
-- Lực lượng tham gia của Quyết định là toàn bộ (mỗi quyết định ban hành phải dành cho một đơn vị cụ thể).
+### **3.3. Mô hình thành phần mức khái niệm**
 
-**Nhân sự - Là - Người nước ngoài: là kiểu liên kết 1:1**
-
-- Đây là mối quan hệ mở rộng thông tin. Một nhân sự nếu là người nước ngoài sẽ có một bộ hồ sơ pháp lý riêng (Visa, Hộ chiếu, GPLĐ).
-- Lực lượng tham gia của Nhân sự là bộ phận (chỉ những nhân sự có quốc tịch nước ngoài mới có thông tin này).
-- Lực lượng tham gia của Thông tin người nước ngoài là toàn bộ (mỗi bộ hồ sơ Visa/GPLĐ phải thuộc về một nhân sự xác định).
-
-**Nhân sự - Đăng ký - Khóa đào tạo: là kiểu liên kết M:N**
-
-- Một nhân sự có thể tham gia nhiều khóa đào tạo khác nhau để nâng cao nghiệp vụ, và một khóa đào tạo có nhiều nhân sự theo học.
-- Lực lượng tham gia của cả hai là bộ phận (nhân sự có thể chưa đi học khóa nào, và khóa đào tạo mới có thể chưa có người đăng ký).
-- Thuộc tính riêng: "Trạng thái đăng ký", "Kết quả đào tạo".
-
-## **3.3. Biểu đồ lớp:**
-
-![Image: image_087](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_087.png)
-
-## **3.4. Thiết kế CSDL ở mức vật lý**
-
-### **3.4.1. Bảng employee\_family\_members (Gia đình nhân viên)**
-
-| Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả |
-| --- | --- | --- | --- |
-| id | BIGINT UNSIGNED | Primary Key, Auto Increment | Khóa chính |
-| employee\_id | BIGINT UNSIGNED | Foreign Key, Not Null | Tham chiếu đến employees.id |
-| relation | VARCHAR(30) | Not Null | Mối quan hệ (Vợ, Chồng, Con...) |
-| full\_name | NVARCHAR(255) | Not Null | Họ tên người thân |
-| dob | DATE | Nullable | Ngày sinh |
-| phone | VARCHAR(30) | Nullable | Số điện thoại |
-| is\_dependent | TINYINT(1) | Default: 0 | Có phải người phụ thuộc không |
-| created\_at | TIMESTAMP | Nullable | Thời điểm tạo |
-
-### **3.4.2. Bảng employee\_degrees (Bằng cấp):**
-
-| Tên trường | Kiểu dữ liệu | Ràng buộc | Mô tả |
-| --- | --- | --- | --- |
-| id | BIGINT UNSIGNED | Primary Key, Auto Increment | Khóa chính |
-| employee\_id | BIGINT UNSIGNED | Foreign Key, Not Null | Tham chiếu đến employees.id |
-| degree\_name | NVARCHAR(255) | Not Null | Tên bằng cấp (Cử nhân, Thạc sĩ...) |
-| school | NVARCHAR(255) | Not Null | Tên trường cấp bằng |
-| major | NVARCHAR(255) | Nullable | Chuyên ngành đào tạo |
-| graduation\_year | INT | Nullable | Năm tốt nghiệp |
-| degree\_file\_id | BIGINT UNSIGNED | Foreign Key | File đính kèm bằng cấp |
+```mermaid
+flowchart TD
+    CLI["Lớp tiếp nhận yêu cầu"] --> Core["Lõi điều phối agent"]
+    Core --> Session["Quản lý phiên làm việc"]
+    Core --> Model["Kết nối mô hình AI"]
+    Core --> Tools["Công cụ hỗ trợ thao tác"]
+    Core --> Safety["Chính sách an toàn"]
+    Core --> Observe["Quan sát và ghi nhận tiến trình"]
+    Session --> Data["Dữ liệu phiên cục bộ"]
+    Tools --> Project["Thư mục dự án"]
+```
 
 # **IV. KIỂM THỬ**
 
 ## **1. Mục tiêu kiểm thử**
 
-Hoạt động kiểm thử phần mềm trong dự án Hệ thống Quản lý Nhân sự được triển khai nhằm đạt được các mục tiêu cốt lõi, mang tính định hướng chất lượng và đảm bảo giá trị sử dụng thực tiễn của hệ thống. Cụ thể như sau:
+Hoạt động kiểm thử trong dự án **fantasticcode** được thực hiện nhằm bảo đảm sản phẩm đáp ứng đúng yêu cầu người dùng, vận hành ổn định và không gây tác động ngoài ý muốn tới thư mục làm việc.
 
-- Phát hiện và phòng ngừa sai sót (Defect Detection & Prevention): Mục tiêu là nhận diện, phân loại và ghi nhận các lỗi phát sinh trong suốt vòng đời phát triển phần mềm. Thông qua đó, nhóm phát triển có cơ sở để khắc phục và ngăn ngừa lỗi tái diễn trong các phiên bản tiếp theo.
+Các mục tiêu chính gồm:
 
-- Đảm bảo chất lượng hệ thống (Quality Assurance): Cung cấp các bằng chứng định lượng và định tính về mức độ ổn định, tính chính xác và hiệu năng của hệ thống. Hoạt động kiểm thử đóng vai trò như một cơ chế đánh giá độc lập nhằm xác nhận phần mềm đạt tiêu chuẩn chất lượng trước khi triển khai thực tế.
-
-- Xác nhận sự phù hợp với yêu cầu (Requirements Validation): Đảm bảo rằng hệ thống được xây dựng hoàn toàn phù hợp với đặc tả yêu cầu nghiệp vụ của Trường Đại học Thủy Lợi, đồng thời đáp ứng kỳ vọng sử dụng của các nhóm người dùng như cán bộ nhân sự, phòng kế toán và ban quản lý.
-
-- Gia tăng mức độ tin cậy của khách hàng (Customer Confidence Building): Thông qua việc bàn giao một hệ thống vận hành ổn định, bảo mật và hiệu quả, hoạt động kiểm thử góp phần củng cố niềm tin của Nhà trường đối với sản phẩm phần mềm.
+- Phát hiện lỗi trong quá trình tiếp nhận yêu cầu, lựa chọn chế độ chạy và trả kết quả.
+- Đảm bảo phiên làm việc có thể tạo mới, tiếp tục, mở lại, phân nhánh và liệt kê.
+- Đảm bảo thao tác phụ trợ của agent được kiểm soát bởi chính sách an toàn.
+- Đảm bảo kết quả có thể quan sát và hỗ trợ debug khi demo.
+- Đảm bảo các design pattern được áp dụng đúng vai trò, không chỉ mô tả hình thức.
 
 ## **2. Các nguyên tắc cơ bản của kiểm thử**
 
-Dự án áp dụng 7 nguyên tắc kiểm thử phần mềm chuẩn quốc tế:
-
-### 1. Kiểm thử chỉ ra sự hiện diện của lỗi: Kiểm thử nhằm mục đích tìm lỗi chứ không thể khẳng định phần mềm 100% không có lỗi.
-### 2. Kiểm thử toàn bộ là không thể: Thay vì thử mọi tổ hợp dữ liệu, tập trung vào các kịch bản dựa trên rủi ro và mức độ ưu tiên.
-### 3. Kiểm thử càng sớm càng tốt: Thực hiện ngay từ giai đoạn phân tích đặc tả để giảm thiểu chi phí khắc phục.
-### 4. Sự tập trung của lỗi: Lỗi thường tập trung ở một số module phức tạp.
-### 5. Nghịch lý thuốc trừ sâu: Các bài kiểm tra lặp đi lặp lại sẽ mất khả năng tìm lỗi mới, cần cập nhật Test Case thường xuyên.
-### 6. Kiểm thử phụ thuộc vào ngữ cảnh: Kiểm thử module "Hồ sơ nhân sự" sẽ khác hoàn toàn với kiểm thử "Phân quyền hệ thống".
-### 7. Sự sai lầm về việc không có lỗi: Một hệ thống không có bug nhưng không đáp ứng được nhu cầu sử dụng thực tế thì vẫn là một dự án thất bại.
+### 1. Kiểm thử chỉ ra sự hiện diện của lỗi: Kiểm thử giúp phát hiện lỗi trong sản phẩm, nhưng không khẳng định phần mềm tuyệt đối không có lỗi.
+### 2. Kiểm thử toàn bộ là không thể: Nhóm tập trung vào các luồng quan trọng như chạy yêu cầu mới, tiếp tục phiên, tạo nhánh và kiểm soát thao tác rủi ro.
+### 3. Kiểm thử càng sớm càng tốt: Các chức năng được kiểm tra ngay khi hoàn thành để giảm chi phí sửa lỗi.
+### 4. Sự tập trung của lỗi: Lỗi thường tập trung ở luồng tích hợp với mô hình AI, quản lý phiên và chính sách an toàn.
+### 5. Nghịch lý thuốc trừ sâu: Bộ test cần được cập nhật khi bổ sung chức năng hoặc thay đổi phạm vi sản phẩm.
+### 6. Kiểm thử phụ thuộc vào ngữ cảnh: Kiểm thử công cụ dòng lệnh khác kiểm thử web app vì trọng tâm là tham số, dữ liệu cục bộ và tương tác với thư mục làm việc.
+### 7. Sự sai lầm về việc không có lỗi: Một công cụ chạy được nhưng không an toàn hoặc không chứng minh được pattern vẫn chưa đạt yêu cầu dự án.
 
 ## **3. Quy trình kiểm thử**
 
-Quy trình kiểm thử trong dự án được xây dựng theo hướng chuẩn hóa, đảm bảo tính hệ thống và khả năng kiểm soát. Các giai đoạn chính bao gồm:
+Quy trình kiểm thử của dự án gồm các bước:
 
-- Lập kế hoạch kiểm thử (Test Planning): Xác định mục tiêu kiểm thử, phạm vi, chiến lược, nguồn lực (nhân sự, công cụ), lịch trình và tiêu chí chấp nhận.
+- Lập kế hoạch kiểm thử: xác định use case, rủi ro và tiêu chí chấp nhận.
+- Thiết kế test case: viết kịch bản cho luồng đúng, luồng thay thế và luồng lỗi.
+- Thực thi kiểm thử: chạy bộ kiểm thử tự động và kiểm tra thủ công các luồng demo quan trọng.
+- Đánh giá chất lượng tổng thể: kiểm tra xem sản phẩm có sẵn sàng đóng gói và trình bày không.
+- Tổng hợp kết quả: ghi nhận lỗi, sửa lỗi và cập nhật tài liệu liên quan.
 
-- Giám sát và kiểm soát (Test Monitoring & Control): Theo dõi tiến độ thực hiện kiểm thử, so sánh với kế hoạch ban đầu, từ đó đưa ra các điều chỉnh kịp thời nhằm đảm bảo tiến độ và chất lượng.
-
-- Phân tích và thiết kế kiểm thử (Test Analysis & Design): Chuyển đổi yêu cầu hệ thống thành các kịch bản kiểm thử (Test Scenarios) và thiết kế các trường hợp kiểm thử (Test Cases) chi tiết, bao gồm dữ liệu đầu vào, bước thực hiện và kết quả mong đợi.
-
-- Thực thi kiểm thử (Test Execution): Tiến hành chạy các Test Case trên môi trường kiểm thử (staging environment), ghi nhận kết quả thực tế, so sánh với kết quả kỳ vọng và báo cáo lỗi (Defect Reporting).
-
-- Đánh giá tiêu chí kết thúc (Exit Criteria Evaluation): Xác định mức độ hoàn thành kiểm thử dựa trên các tiêu chí như độ bao phủ, tỷ lệ lỗi còn tồn đọng, mức độ nghiêm trọng của lỗi.
-
-- Kết thúc kiểm thử (Test Closure): Tổng hợp báo cáo kiểm thử, lưu trữ tài liệu, đánh giá hiệu quả quy trình và rút ra bài học kinh nghiệm cho các dự án tiếp theo.
+```mermaid
+flowchart LR
+    A["Lập kế hoạch test"] --> B["Thiết kế test case"]
+    B --> C["Thực thi kiểm thử"]
+    C --> D{"Đạt tiêu chí?"}
+    D -- Không --> E["Sửa lỗi"]
+    E --> C
+    D -- Có --> F["Sẵn sàng đóng gói"]
+```
 
 ## **4. Các phương pháp kiểm thử**
 
-- Kiểm thử hộp đen (Black-box Testing): Kiểm tra chức năng dựa trên đầu vào/đầu ra mà không cần quan tâm đến code bên trong.
-
-- Kiểm thử hộp trắng (White-box Testing): Kiểm tra cấu trúc logic bên trong mã nguồn, các câu lệnh điều kiện và vòng lặp.
-
-- Kiểm thử theo kinh nghiệm (Experience-based Testing): Sử dụng kỹ năng và trải nghiệm của Senior QA để dự đoán các lỗi tiềm ẩn mà đặc tả chưa đề cập.
-
-Giới hạn trong dự án Quản Lý Nhân Sự Trường Đại Học Thủy Lợi, phương pháp kiểm thử được kết hợp sử dụng là: Kiểm thử dựa trên kinh nghiệm (Experience-based Testing)
+- Kiểm thử hộp đen: kiểm tra chức năng dựa trên đầu vào, kết quả và thông báo lỗi.
+- Kiểm thử hộp trắng: kiểm tra logic nội bộ ở các phần có rủi ro cao.
+- Kiểm thử tích hợp: kiểm tra các thành phần chính hoạt động cùng nhau.
+- Kiểm thử đầu cuối: mô phỏng một lượt sử dụng hoàn chỉnh từ yêu cầu đầu vào tới kết quả cuối cùng.
+- Kiểm thử hồi quy: đảm bảo thay đổi mới không làm hỏng luồng đã ổn định.
 
 ## **5. Phạm vi kiểm thử (Scope)**
 
-Dựa trên đặc thù dự án Quản lý nhân sự Trường Đại học Thủy lợi, phạm vi bao gồm các tác nhân:
-
-| **Tác nhân** | **Phạm vi chức năng kiểm thử chính** |
+| **Khu vực** | **Phạm vi chức năng kiểm thử chính** |
 | --- | --- |
-| Quản trị viên | 1. Quản trị Hệ thống & Tài khoản: Quản lý tài khoản người dùng (Tìm kiếm, Thêm, Sửa, Khóa/Mở khóa).  2. Quản trị Cơ cấu tổ chức: Thêm mới đơn vị, Sửa thông tin đơn vị, Thay đổi trạng thái (Giải thể/Sáp nhập).  3. Nhóm Cá nhân (Self-service): Đăng nhập, Đăng xuất, Đổi mật khẩu, Xem thông tin cá nhân, Xem thông tin đơn vị công tác, Đăng ký khóa đào tạo. |
-| Phòng TCCB | 1. Quản lý Hồ sơ & Hợp đồng: Quản lý hồ sơ nhân sự (Thêm, Sửa, Tìm kiếm, Lọc, In, Xem chi tiết, Đánh dấu thôi việc), Thêm mới hợp đồng.  2. Nghiệp vụ Tổ chức & Đánh giá: Bổ nhiệm/Bãi nhiệm nhân sự vào đơn vị, Ghi nhận đánh giá khen thưởng/kỷ luật.  3. Quản lý Đào tạo: Mở khóa đào tạo, Chỉnh sửa, Xem thông tin khóa, Ghi nhận kết quả.  4. Quản lý Danh mục (Cấu hình): Quản lý cấu hình Hệ số lương (Thêm, Sửa, Xóa, Ngừng SD), Quản lý cấu hình Phụ cấp (Thêm, Sửa, Ngừng SD), Quản lý cấu hình Hợp đồng (Thêm, Sửa, Ngừng SD).  5. Báo cáo Thống kê: Xem các báo cáo thống kê nhân sự.  6. Nhóm Cá nhân: Đăng nhập, Đăng xuất, Đổi mật khẩu, Xem thông tin cá nhân, Xem thông tin đơn vị công tác, Đăng ký & Xem khóa đào tạo đã đăng ký. |
-| Phòng TCKT | 1. Khai thác dữ liệu (Chỉ đọc): Xem chi tiết hồ sơ nhân sự, In hồ sơ nhân sự (phục vụ đối chiếu tính lương).  2. Báo cáo Thống kê: Xem các báo cáo thống kê nhân sự.  3. Nhóm Cá nhân: Đăng nhập, Đăng xuất, Đổi mật khẩu, Xem thông tin cá nhân, Xem thông tin đơn vị công tác, Đăng ký & Xem khóa đào tạo đã đăng ký. |
-| Cán bộ | 1. Nhóm Cá nhân (Self-service): Đăng nhập, Đăng xuất (Tự động đăng xuất sau 30p), Đổi mật khẩu.  2. Xem thông tin: Xem thông tin trong hồ sơ cá nhân của mình, Xem thông tin chi tiết đơn vị đang công tác.  3. Đào tạo: Đăng ký khóa đào tạo, Xem danh sách các khóa đào tạo đã đăng ký. |
+| Giao diện dòng lệnh | Kiểm tra cách người dùng nhập yêu cầu, chọn chế độ chạy và nhận thông báo lỗi. |
+| Quản lý phiên | Kiểm tra tạo mới, tiếp tục, mở lại, phân nhánh và liệt kê phiên. |
+| Tích hợp mô hình AI | Kiểm tra hệ thống xử lý phản hồi thành công, phản hồi lỗi và yêu cầu thao tác phụ trợ. |
+| Công cụ phụ trợ | Kiểm tra thao tác trong thư mục làm việc và chính sách an toàn. |
+| Quan sát hệ thống | Kiểm tra thông tin tiến trình, log và khả năng debug. |
+| Design pattern | Kiểm tra pattern được gắn với trách nhiệm thật và có thể giải thích bằng module cụ thể. |
 
 ## **6. Tài liệu tham chiếu**
 
-- Đặc tả (Specification): Tài liệu mô tả luồng nghiệp vụ và các quy định tính toán.
+- Tài liệu yêu cầu và use case trong phần I.
+- Kế hoạch dự án trong phần II.
+- Thiết kế mức khái niệm trong phần III.
+- Giải thích pattern trong phần VI.
+- Chi tiết triển khai trong phần VII.
 
 ## **7. Công cụ kiểm thử (Tools)**
 
-- Quản lý kế hoạch (Test Plan): Google Docs
-
-- Thiết kế kịch bản (Test Case): Google Sheets
-
-- Quản lý lỗi (Log Bug Tool): Google Sheets (Theo dõi ID, trạng thái, mức độ nghiêm trọng và tiến độ fix bug).
+Ở mức sản phẩm, nhóm sử dụng bộ kiểm thử tự động, kiểm thử thủ công khi demo và kiểm tra tài liệu trước khi bàn giao. Tên công cụ, lệnh chạy và cấu trúc test cụ thể được trình bày trong phần VII để tránh làm phần kiểm thử sản phẩm trở nên quá kỹ thuật.
 
 ## **8. Tiêu chuẩn kiểm thử**
 
-| Điều kiện bắt đầu thực hiện test | - Tài liệu Đặc tả yêu cầu (STRQ/FEAT) và Thiết kế giao diện (Figma) đã được chốt và phê duyệt.  - Đội ngũ Phát triển (Dev) đã hoàn thành việc code chức năng, thực hiện xong Unit Test và deploy mã nguồn lên môi trường Kiểm thử (Test Environment).  - Môi trường kiểm thử và Dữ liệu kiểm thử (Test Data) đã được thiết lập sẵn sàng.  - Danh sách Kịch bản kiểm thử (Test Cases) đã được review và phê duyệt. |
+| Điều kiện bắt đầu thực hiện test | Chức năng đã hoàn thành ở mức có thể chạy được, yêu cầu và tiêu chí chấp nhận đã rõ ràng. |
 | --- | --- |
-| Khi nào thì dừng test | * 100% các Test Case trong phạm vi (Scope) đã được thực thi (Executed). * Tỷ lệ Test Case đạt (Pass Rate) tối thiểu từ 95% trở lên. * Tuyệt đối KHÔNG CÒN lỗi ở mức độ Nghiêm trọng (Critical) và Cao (High). * Các lỗi ở mức độ Trung bình (Medium) hoặc Thấp (Low/Minor) còn tồn đọng (nếu có) phải có số lượng nằm trong ngưỡng cho phép và đã được Quản trị dự án (PM) hoặc Khách hàng chấp nhận rủi ro (Accepted Risks). |
-| Tiêu chuẩn test thành công | - Đáp ứng được yêu cầu chức năng của phần mềm   * Phần mềm đáp ứng đúng và đủ 100% các yêu cầu tính năng (FEAT) và yêu cầu nghiệp vụ đã được định nghĩa trong tài liệu Đặc tả. * Tài liệu báo cáo tổng kết kiểm thử (Test Summary Report) được hoàn thiện và ký nghiệm thu. |
+| Khi nào thì dừng test | Các test trong phạm vi đã được thực thi, lỗi nghiêm trọng đã được sửa, các rủi ro còn lại đã được ghi nhận. |
+| Tiêu chuẩn test thành công | Các use case chính hoạt động đúng, không phát sinh lỗi nghiêm trọng và sản phẩm sẵn sàng demo. |
 
 ## **9. Kịch bản kiểm thử**
 
-Kịch bản kiểm thử chi tiết : [PTDAPM\_Nhóm 3\_Team 4](https://docs.google.com/spreadsheets/d/12rX3kGvQpFdHMzz-gwhGLGRY6ao3SkBk_6RjYORaQMM/edit?usp=sharing)
-
-9.1.Module Đăng nhập
-
-| **Dự án** | | ***Quản Lý Nhân Sự Trường Đại Học Thủy Lợi*** | | | | | | | | | | | |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Mã Module** | | ***Đăng nhập*** | | | | | | | | | | | |
-| **Tác nhân chính** | | ***Quản trị viên, Cán bộ TCCB, Cán bộ TCKT, Cán bộ nhân sự*** | | | | | | | | | | | |
-| **Điều kiện tiên quyết** | | ***Người dùng đã được cấp tài khoản hợp lệ. Hệ thống đang hoạt động bình thường.*** | | | | | | | | | | | |
-| **Tên kiểm thử viên** | | ***Nguyễn Văn Trường*** | | | | | | | | | | | |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| **Tổng số TestCase** | | | **Đạt** | | | **Chưa đạt** | | | **Chưa kiểm tra** | | | | |
-| **24** | | | **22** | | | **2** | | | **0** | | | | |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| **ID** | **Mô tả trường hợp kiểm tra** | | **Các bước thực hiện** | | **Dữ liệu đầu vào** | **Kết quả mong đợi** | | **Lần kiểm thử** | | | | **Kết quả** | **Ghi chú** |
-| **Lần 1** | **Lần 2** | **Lần 3** | **Lần 4** |
-|
-|  | ***Kiểm thử chức năng*** | | | | | | | | | | | | |
-| FT\_DN\_06 | Đăng nhập thành công | | 1. Nhập Tên đăng nhập và Mật khẩu đúng  2. Nhấn nút "Đăng nhập" | | Tên đăng nhập: admin  Mật khẩu: admin123 | - Hiển thị thông báo "Đăng nhập thành công"  - Hệ thống chuyển hướng hiển thị giao diện Dashboard tương ứng | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| FT\_DN\_07 | Đăng nhập khi để trống dữ liệu | | 1. Không nhập gì vào 2 ô  2. Nhấn nút "Đăng nhập" | |  | - Hệ thống không gửi yêu cầu - Hiển thị 2 cảnh báo dưới mỗi textbox: "Vui lòng nhập tên đăng nhập" và "Vui lòng nhập mật khẩu" | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| FT\_DN\_08 | 1. Nhập thông tin vào ô Tên đăng nhập  2. Bỏ trống ô nhập Mật khẩu  3. Nhấn nút "Đăng nhập" | | Tên đăng nhập: admin | Hệ thống không gửi yêu cầu và hiển thị cảnh báo: "Vui lòng nhập mật khẩu". | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| FT\_DN\_09 | 1. Bỏ trống ô Tên đăng nhập  2. Nhập thông tin vào ô nhập Mật khẩu  3. Nhấn nút "Đăng nhập" | | Mật khẩu: admin123 | Hệ thống không gửi yêu cầu và hiển thị cảnh báo: "Vui lòng nhập tên đăng nhập". | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| FT\_DN\_10 | Đăng nhập sai dữ liệu | | 1. Nhập sai Tên đăng nhập  2. Nhập sai Mật khẩu  3. Nhấn nút "Đăng nhập" | | Tên đăng nhập: ad  Mật khẩu: ad | Hệ thống hiển thị thông báo "Tên đăng nhập hoặc mật khẩu không đúng" | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| FT\_DN\_11 | 1. Nhập sai Tên đăng nhập  2. Nhập đúng Mật khẩu  3. Nhấn nút "Đăng nhập" | | Tên đăng nhập: ad  Mật khẩu: admin123 | Hệ thống hiển thị thông báo "Tên đăng nhập hoặc mật khẩu không đúng" | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| FT\_DN\_12 | 1. Nhập đúng Tên đăng nhập  2. Nhập sai Mật khẩu  3. Nhấn nút "Đăng nhập" | | Tên đăng nhập: admin  Mật khẩu: admin | Hệ thống hiển thị thông báo "Tên đăng nhập hoặc mật khẩu không đúng" | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| FT\_DN\_13 | Đăng nhập bằng tài khoản bị khóa (E2) | | 1. Nhập Tên đăng nhập và Mật khẩu đã bị khóa (Lock) trong hệ thống  2. Nhấn nút "Đăng nhập" | | Tên đăng nhập: tkkhoa  Mật khẩu: tkkhoa | Hệ thống hiển thị thông báo "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên". Không chuyển hướng đến Dashboard tương ứng | | Chưa đạt | Chưa đạt | Chưa đạt | Chưa đạt | Chưa đạt | - Kiểm tra ngày 02/04/2026 - lần 4 kết quả vẫn chưa đạt. Lí do: Hiển thị thông báo không giống đặc tả |
-| FT\_DN\_14 | Đăng nhập khi đã có session hợp lệ (A1) | | 1. Đã đăng nhập thành công trước đó.  2. Tắt trình duyệt rồi mở lại link trang chủ | |  | - Người dùng truy cập trang đăng nhập khi đã có session hợp lệ,  - Hệ thống tự động chuyển hướng vào Dashboard. | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| FT\_DN\_15 | Kiểm tra phân quyền sau đăng nhập | | 1. Đăng nhập bằng tài khoản Quản trị viên.  2. Kiểm tra thanh Menu điều hướng. | |  | Chỉ hiển thị các chức năng liên quan đến Quản trị viên (Admin). | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| FT\_DN\_16 | Trim khoảng trắng | | 1. Nhập có khoảng trắng đầu vào Tên đăng nhập 2. Nhập đúng Mật khẩu  3. Nhấn nút "Đăng nhập" | | Tên đăng nhập: <khoảng trắng>admin Mật khẩu: admin123 | - Hiển thị thông báo "Đăng nhập thành công"  - Hệ thống chuyển hướng hiển thị giao diện Dashboard tương ứng | | Chưa đạt | Chưa đạt | Chưa đạt | Chưa đạt | Chưa đạt | - Kiểm tra ngày 02/04/2026 - lần 4 hệ thống Hiển thị thông báo "Invalid username or password" không giống đặc tả |
-|  | ***Kiểm thử Ngoại lệ/Phím tắt*** | | | | | | | | | | | | |
-| EX\_DN\_17 | Kiểm tra phím Enter | | 1. Nhập Tên đăng nhập và Mật khẩu hợp lệ 2. Nhấn phím Enter trên bàn phím | | Tên đăng nhập: admin  Mật khẩu: admin123 | Hệ thống thực hiện lệnh đăng nhập thành công (tương đương nhấn chuột). | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| EX\_DN\_18 | Kiểm tra copy-paste vào ô Mật khẩu | | 1. Sao chép một chuỗi ký tự.  2. Dán vào ô Mật khẩu | | Chuỗi bất kỳ | Ô mật khẩu nhận dữ liệu và vẫn phải hiển thị dưới dạng ẩn (dấu chấm). | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| EX\_DN\_19 | Reload sau login | | 1. F5 dashboard | |  | Vẫn giữ session | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| EX\_DN\_20 | SQL Injection | | 1. Truy cập login  2. Nhập payload  3. Nhấn login | | Nhập: ' OR 1=1 | Không login | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| EX\_DN\_21 | XSS input | | 1. Truy cập login  2. Nhập script  3. Nhấn login | | <script> | Không thực thi | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| EX\_DN\_22 | Back sau login | | 1. Login thành công  2. Nhấn Back | |  | Không quay lại login | | Chưa đạt | Chưa đạt | Chưa đạt | Đạt | Đạt | Kiểm tra ngày 02/04/2026 - lần 4: Team code đã chỉnh sửa |
-| EX\_DN\_23 | Button khi loading | | 1. Nhập đúng dữ liệu  2. Nhấn login  3. Quan sát button | |  | Button disable khi loading | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| EX\_DN\_24 | Đăng nhập sai nhiều lần | | 1. Nhập sai Tên đăng nhập và Mật khẩu nhiều lần 2. Nhấn "Đăng nhập" | |  | Hiển thị thông báo "Too many login attempts, please try again later" | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-
-9.2. Module Đăng xuất
-
-| **Dự án** | | ***Quản Lý Nhân Sự Trường Đại Học Thủy Lợi*** | | | | | | | | | | | |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Mã Module** | | ***Đăng xuất*** | | | | | | | | | | | |
-| **Tác nhân chính** | | ***Quản trị viên, Cán bộ TCCB, Cán bộ TCKT, Cán bộ nhân sự*** | | | | | | | | | | | |
-| **Điều kiện tiên quyết** | | ***Người dùng đang trong phiên đăng nhập hợp lệ*** | | | | | | | | | | | |
-| **Tên kiểm thử viên** | | ***Nguyễn Văn Trường*** | | | | | | | | | | | |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| **Tổng số TestCase** | | | **Đạt** | | | **Chưa đạt** | | | **Chưa kiểm tra** | | | | |
-| **9** | | | **8** | | | **1** | | | **0** | | | | |
-|  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| **ID** | **Mô tả trường hợp kiểm tra** | | **Các bước thực hiện** | | **Dữ liệu đầu vào** | **Kết quả mong đợi** | | **Lần kiếm thử** | | | | **Kết quả** | **Ghi chú** |
-| **Lần 1** | **Lần 2** | **Lần 3** | **Lần 4** |
-|
-|  | ***Kiểm tra chức năng*** | | | | | | | | | | | | |
-| FT\_DX\_03 | Đăng xuất thành công | | 1. Click avatar 2. Nhấn "Đăng xuất"  3. Chọn "Xác nhận" trên hộp thoại | |  | Session bị hủy, hệ thống chuyển hướng người dùng về trang Đăng nhập. | | Chưa đạt | Chưa đạt | Chưa đạt | Đạt | Đạt | - Kiểm tra ngày 02/04/2026 - lần 4: Team code đã chỉnh sửa |
-| FT\_DX\_04 | Hủy thao tác đăng xuất | | 1. Nhấn "Đăng xuất"  2. Chọn "Hủy" trên hộp thoại | |  | Hộp thoại đóng lại, người dùng vẫn ở nguyên trang hiện tại, session vẫn duy trì. | | Chưa đạt | Chưa đạt | Chưa đạt | Đạt | Đạt | - Kiểm tra ngày 02/04/2026 - lần 4: Team code đã chỉnh sửa |
-| FT\_DX\_05 | Kiểm tra Đăng xuất tự động (A1) | | 1. Đăng nhập vào hệ thống.  2. Để hệ thống ở trạng thái rảnh (không thao tác) trong 30 phút. | | Thời gian rảnh > 30p | Hệ thống tự động hủy session, thông báo "Phiên làm việc đã hết hạn" và đẩy về trang Đăng nhập. | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| FT\_DX\_06 | Kiểm tra tính an toàn của Session | | 1. Đăng xuất thành công.  2. Nhấn nút "Back" trên trình duyệt. | |  | Hệ thống không được quay lại trang Dashboard mà phải giữ nguyên ở trang Đăng nhập | | Đạt | Đạt | Đạt | Chưa đạt | Chưa đạt | - Kiểm tra ngày 02/04/ 2026 - lần 4: Hệ thống quay trở lại trang Dashboard |
-| FT\_DX\_07 | Truy cập link trực tiếp sau khi đăng xuất | | 1. Đăng xuất thành công.  2. Nhập trực tiếp URL của trang Dashboard vào thanh địa chỉ. | |  | Hệ thống từ chối truy cập và chuyển hướng về trang Đăng nhập. | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-|  | ***Kiểm tra ngoại lệ/Đa phiên*** | | | | | | | | | | | | |
-| EX\_DX\_08 | Đăng xuất trên một tab (Đa tab) | | 1. Mở hệ thống trên 2 tab trình duyệt.  2. Thực hiện đăng xuất ở Tab 1. | |  | Tại Tab 2, khi người dùng thực hiện một thao tác bất kỳ, hệ thống phải yêu cầu đăng nhập lại. | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
-| EX\_DX\_09 | Reload sau logout | | 1. Logout  2. Nhấn F5 | |  | Vẫn ở login | | Đạt | Đạt | Đạt | Đạt | Đạt |  |
+| **ID** | **Khu vực** | **Mô tả kiểm thử** | **Kết quả mong đợi** |
+| --- | --- | --- | --- |
+| TC_PRODUCT_01 | Chạy yêu cầu mới | Người dùng gửi một yêu cầu mới cho agent | Hệ thống trả kết quả và lưu phiên làm việc. |
+| TC_PRODUCT_02 | Tiếp tục phiên | Người dùng tiếp tục phiên gần nhất | Hệ thống dùng đúng ngữ cảnh cũ và cập nhật phiên. |
+| TC_PRODUCT_03 | Mở phiên theo mã | Người dùng mở một phiên cụ thể | Hệ thống khôi phục đúng phiên và xử lý yêu cầu mới. |
+| TC_PRODUCT_04 | Tạo nhánh phiên | Người dùng tạo nhánh từ phiên cũ | Phiên mới độc lập với phiên nguồn. |
+| TC_PRODUCT_05 | Liệt kê phiên | Người dùng xem danh sách phiên đã lưu | Hệ thống hiển thị danh sách tóm tắt. |
+| TC_PRODUCT_06 | An toàn thao tác | Agent yêu cầu thao tác có rủi ro | Hệ thống chặn hoặc giới hạn theo chính sách. |
+| TC_PRODUCT_07 | Quan sát kết quả | Người dùng bật chế độ theo dõi khi demo | Hệ thống ghi nhận đủ thông tin để truy vết. |
+| TC_PRODUCT_08 | Pattern | Người đánh giá kiểm tra phần giải thích pattern | Mỗi pattern có vai trò và vấn đề giải quyết rõ ràng. |
 
 # **V. Đóng gói**
 
@@ -901,231 +786,559 @@ Kịch bản kiểm thử chi tiết : [PTDAPM\_Nhóm 3\_Team 4](https://docs.go
 
 ### **1.1. Mục đích tài liệu**
 
-Tài liệu này trình bày đầy đủ phương án triển khai hệ thống **Quản lý nhân sự Trường Đại học Thủy Lợi** trong môi trường Amazon Web Services, với EC2 đóng vai trò tầng ứng dụng và Amazon RDS PostgreSQL đóng vai trò tầng dữ liệu. Nội dung được tổng hợp từ các tài liệu triển khai nội bộ và kinh nghiệm xử lý các sự cố đã phát sinh trong quá trình đưa hệ thống vào môi trường chạy thật.
+Phần này trình bày cách đóng gói và vận hành **fantasticcode** ở mức sản phẩm. Mục tiêu là giúp người dùng hiểu sản phẩm cần được chuẩn bị như thế nào trước khi demo hoặc bàn giao, không đi sâu vào lệnh kỹ thuật cụ thể.
 
-Mục tiêu của tài liệu là hỗ trợ ba nhu cầu đồng thời: triển khai ban đầu, bàn giao cho người tiếp nhận và vận hành hệ thống sau triển khai. Vì vậy, ngoài phần mô tả kiến trúc, tài liệu còn nêu rõ các bước cài đặt, quy trình build và deploy, các yêu cầu về phân quyền cơ sở dữ liệu, cơ chế backup và những điểm cần kiểm tra khi xảy ra lỗi.
+### **1.2. Thông tin cơ bản**
 
-### **1**.2**. Thông tin cơ bản**
+Tên hệ thống: **fantasticcode**
 
-Tên hệ thống: **Hệ thống Quản lý Nhân sự Trường Đại học Thủy Lợi**
+Tên mô tả: **Công cụ agent dòng lệnh có thể script hóa**
 
-(Tên viết tắt**: HRMS - Human Resources Management System**)
+Hệ thống được phát triển trong khuôn khổ bài tập lớn môn “Phát triển Dự án Phần mềm” của nhóm 3, Khoa Công nghệ Thông tin, Trường Đại học Thủy Lợi.
 
-Hệ thống được phát triển trong khuôn khổ đồ án kết thúc môn “Phát triển Dự án Phần mềm” của nhóm 3, Khoa Công nghệ Thông tin, Trường Đại học Thủy Lợi.
+#### **1.2.1. Mục tiêu chính của hệ thống**
 
-#### **1.**2**.1. Mục tiêu chính của hệ thống**
+- Cho phép người dùng chạy agent bằng dòng lệnh.
+- Cho phép lựa chọn mô hình và kiểu agent cho từng tác vụ.
+- Cho phép tiếp tục, mở lại và phân nhánh phiên làm việc.
+- Cho phép agent thao tác trong thư mục làm việc với chính sách an toàn.
+- Minh họa các design pattern GoF trong một sản phẩm có thể chạy được.
 
-- Hỗ trợ giảng viên, cán bộ quản lý hồ sơ cá nhân, tra cứu đơn vị công tác, đăng ký tham gia các khóa đào tạo hiện có một cách dễ dàng.
-- Hỗ trợ Phòng Tổ chức Cán bộ và Phòng Tài chính Kế toán quản lý, phê duyệt, theo dõi và báo cáo về Hồ sơ nhân sự & Cơ cấu tổ chức một cách hiệu quả.
+#### **1.2.2 Đối tượng sử dụng**
 
-#### **1.**2**.2 Đối tượng sử dụng**
+- Sinh viên học design pattern và kiến trúc phần mềm.
+- Lập trình viên muốn thử công cụ agent có thể script hóa.
+- Người đánh giá muốn xem cách pattern được áp dụng vào sản phẩm thực tế.
 
-- Giảng viên / Cán bộ: Đăng nhập để quản lý hồ sơ cá nhân, tra cứu đơn vị công tác, đăng ký sự kiện & khóa đào tạo.
-- Quản trị viên: Quản lý toàn bộ hệ thống, quản lý hồ sơ nhân sự & cơ cấu tổ chức, phê duyệt sự kiện & khóa đào tạo, xuất báo cáo thống kê.
+#### **1.2.3. Môi trường vận hành ở mức sản phẩm**
 
-#### **1.**2**.3. Công nghệ sử dụng**
+- Chạy trên máy cá nhân hoặc môi trường demo cục bộ.
+- Không yêu cầu máy chủ riêng cho phạm vi đồ án.
+- Cần cấu hình quyền truy cập tới dịch vụ mô hình AI nếu chạy với mô hình thật.
+- Dữ liệu phiên và thông tin quan sát được lưu trong phạm vi dự án của người dùng.
 
-- Hệ thống web-based (truy cập qua trình duyệt).
-- Frontend: React/Vite.
-- Backend: Elysia.
-- Cơ sở dữ liệu: PostgreSQL.
+### **1.3. Mô hình vận hành**
 
-#### **1.**2**.4. Môi trường triển khai**
+```mermaid
+flowchart TD
+    User["Người dùng"] --> CLI["Công cụ dòng lệnh"]
+    CLI --> Core["Lõi agent"]
+    Core --> AI["Dịch vụ mô hình AI"]
+    Core --> Session["Dữ liệu phiên cục bộ"]
+    Core --> Tools["Công cụ thao tác thư mục dự án"]
+    Core --> Logs["Thông tin quan sát và debug"]
+    Tools --> Project["Thư mục dự án"]
+```
 
-- Hệ thống chạy trên trình duyệt web phổ biến (Google Chrome, Microsoft Edge, Firefox, Safari, v.v..).
-- Không yêu cầu cài đặt phần mềm bổ sung.
-- Có thể truy cập từ mạng nội bộ trường hoặc internet công cộng.
+Mô hình vận hành của hệ thống gồm một tiến trình dòng lệnh. Khi người dùng chạy tác vụ, hệ thống đọc yêu cầu, chuẩn bị ngữ cảnh, gọi mô hình AI, thực hiện thao tác phụ trợ nếu được phép, lưu phiên làm việc và trả kết quả cuối cùng.
 
-Hệ thống được thiết kế theo nguyên tắc thân thiện với người dùng, đảm bảo bảo mật thông tin và tuân thủ các quy chế khoa học của Trường Đại học Thủy Lợi.
+### **1.4. Vai trò từng thành phần hệ thống ở mức sản phẩm**
 
-### **1.**3**. Mô hình vận hành**
+| **Thành phần** | **Vai trò** |
+| --- | --- |
+| Công cụ dòng lệnh | Tiếp nhận yêu cầu và tham số vận hành từ người dùng. |
+| Lõi agent | Điều phối quá trình chuẩn bị, gọi mô hình, xử lý thao tác và trả kết quả. |
+| Quản lý phiên | Lưu và khôi phục ngữ cảnh làm việc. |
+| Kết nối mô hình AI | Gửi yêu cầu tới dịch vụ mô hình và nhận phản hồi. |
+| Công cụ phụ trợ | Hỗ trợ agent thao tác với thư mục dự án. |
+| Chính sách an toàn | Kiểm soát các thao tác có rủi ro. |
+| Quan sát hệ thống | Ghi nhận tiến trình, kết quả và lỗi phục vụ demo/debug. |
 
-Phương án phù hợp cho hệ thống là mô hình triển khai trên máy chủ EC2 và cơ sở dữ liệu Amazon RDS PostgreSQL trong cùng một môi trường đám mây ảo. EC2 chỉ chịu trách nhiệm chạy frontend tĩnh, backend runtime, nginx; còn cơ sở dữ liệu được đặt trên Amazon RDS.
+### **1.5. Kết quả sau triển khai**
 
-Điểm thuận lợi của việc sử dụng mô hình như trên là: giảm tải gánh nặng cho EC2, hạn chế rủi ro khi build và database cùng tranh chấp CPU hoặc bộ nhớ, đồng thời tận dụng khả năng sao lưu và quản trị dữ liệu sẵn có của Amazon RDS. Với phạm vi đồ án, đây là mô hình cân bằng tốt giữa chi phí và độ ổn định.
+Sau khi đóng gói thành công, người dùng có thể chạy **fantasticcode** như một công cụ dòng lệnh cục bộ. Sản phẩm có thể tạo phiên làm việc mới, tiếp tục phiên cũ, tạo nhánh thử nghiệm, thao tác có kiểm soát trong thư mục dự án và ghi nhận thông tin cần thiết để phục vụ demo.
 
-- 01 máy chủ Ubuntu EC2 để chạy frontend tĩnh, backend runtime và nginx.
-- 01 Amazon RDS PostgreSQL để lưu dữ liệu production.
-- Nginx trên EC2 phục vụ frontend và reverse proxy các route /auth và /api tới backend.
-- systemd quản lý tiến trình backend và tự khởi động lại khi có sự cố.
-- GitHub Actions đảm nhận build và tạo artifact.
-- Artifact được chuyển lên EC2 bằng rsync.
+### **1.6. Tự động hóa quy trình bàn giao**
 
-### **1.**4**. Vai trò từng thành phần hệ thống**
+Trong phạm vi đồ án, hệ thống chưa bắt buộc triển khai lên cloud. Tuy nhiên, quy trình kiểm tra và đóng gói có thể được tự động hóa để đảm bảo mỗi lần bàn giao đều trải qua các bước kiểm tra chất lượng giống nhau.
 
-#### **1.**4**.1. Thành phần chạy trên EC2**
-
-- Thư mục frontend static: /srv/hrms/app/apps/frontend/dist.
-- Thư mục backend runtime: /srv/hrms/app/apps/backend/dist.
-- Nginx reverse proxy cho lưu lượng HTTP/HTTPS.
-- Bun runtime để chạy backend và migration.
-- Các tệp cấu hình triển khai như .env, unit file của systemd và cấu hình nginx.
-
-#### **1.**4**.2. Thành phần chạy trên RDS**
-
-- Lưu trữ dữ liệu PostgreSQL.
-- Cung cấp endpoint kết nối cho DATABASE\_URL.
-- Hỗ trợ backup tự động, snapshot thủ công và các thao tác quản trị dữ liệu.
-- Cho phép tách biệt quyền giữa master user và application user.
-
-#### **1.**4**.3. Thành phần chạy trên CI runner**
-
-- Cài các gói cần thiết và chạy type-check, lint, build.
-- Tạo artifact frontend và backend để deploy lên máy chủ.
-- Đóng vai trò xây dựng chính thay cho máy chủ EC2.
-- Đồng bộ các tệp cần thiết lên EC2 và kích hoạt quy trình deploy.
-
-### **1.**5**. Kết quả sau triển khai**
-
-Hệ thống đã được triển khai trên một máy chủ EC2 tại địa chỉ IP sau: <http://3.23.53.28/>
-
-Vì lý do giới hạn về mặt chi phí và nhân lực, hệ thống hiện chỉ có thể truy cập được qua địa chỉ IP công cộng. Tuy nhiên, việc triển khai trên một tên miền thật và có chứng chỉ TLS hợp lệ rất đơn giản, chỉ cần cập nhật giá trị của các biến trong tệp .env: BETTER\_AUTH\_URL, FRONTEND\_URL và VITE\_API\_URL
-
-### **1.**6**. Tự động hóa bằng Github Actions**
-
-GitHub Actions được sử dụng cho mô hình triển khai này vì việc build có thể được thực hiện ngoài EC2, khi đó EC2 chỉ tiếp nhận artifact và chạy bước vận hành cuối cùng.
-
-Việc sử dụng Github Actions thay vì build thủ công trên máy tính cá nhân và đồng bộ lên máy chủ EC2 bằng rsync sẽ làm giảm đáng kể thời gian triển khai các bản vá hoặc cập nhật tính năng mới, đồng thời sẽ giúp tối ưu hóa quá trình triển khai, tránh gặp phải các lỗi do con người hoặc lỗi khác (mất internet trong quá trình triển khai, máy tính gặp sự cố khi đang trong quá trình triển khai, v.v..).
-
-#### **1.**6**.1. Luồng hoạt động của CI/CD pipeline**
-
-##### 1. Checkout mã nguồn từ repository.
-##### 2. Cài đặt Bun và các gói cần thiết.
-##### 3. Khởi tạo cây TanStack router.
-##### 4. Chạy type check.
-##### 5. Chạy lint ở chế độ báo cáo, cho phép chạy tiếp nếu gặp lỗi về formatting.
-##### 6. Build frontend với APP\_PUBLIC\_ORIGIN và build backend.
-##### 7. Dùng rsync để đồng bộ repository payload và dist artifacts lên EC2.
-##### 8. SSH vào EC2 để copy .env, chạy bun install khi cần, chạy db:migrate, restart backend và reload nginx.
+```mermaid
+flowchart LR
+    A["Chuẩn bị mã nguồn"] --> B["Kiểm tra chất lượng"]
+    B --> C["Đóng gói sản phẩm"]
+    C --> D["Chạy thử công cụ"]
+    D --> E["Sẵn sàng demo / bàn giao"]
+```
 
 ## **2. Hướng dẫn sử dụng hệ thống**
 
 ### 2.1 Mục tiêu
 
-Tài liệu này được xây dựng nhằm hướng dẫn người dùng sử dụng Hệ thống Quản lý Nhân sự một cách đầy đủ, rõ ràng và có hệ thống. Nội dung tài liệu trình bày cách truy cập hệ thống, cách sử dụng từng phân hệ chức năng và các bước thao tác cơ bản dành cho người dùng lần đầu tiếp cận hệ thống.
-
-Tài liệu đồng thời là cơ sở minh chứng khả năng vận hành thực tế của hệ thống trong báo cáo đồ án hoặc khóa luận.
+Tài liệu hướng dẫn sử dụng giúp người dùng hiểu cách chuẩn bị, cấu hình và chạy **fantasticcode** cho các tác vụ agent cơ bản: chạy yêu cầu mới, tiếp tục phiên, tạo nhánh phiên, chọn kiểu agent, bật theo dõi và liệt kê phiên đã lưu.
 
 ### **2.2 Đối tượng sử dụng**
 
 Hệ thống được thiết kế cho các nhóm người dùng sau:
 
-#### 1. Quản trị viên hệ thống.
-#### 2. Cán bộ tổ chức cán bộ.
-#### 3. Nhân viên.
-
-Tùy theo vai trò đăng nhập, hệ thống sẽ hiển thị các chức năng tương ứng.
+#### 1. Sinh viên cần demo design pattern.
+#### 2. Lập trình viên muốn dùng công cụ agent có thể script hóa.
+#### 3. Người kiểm thử cần chạy luồng sản phẩm và đánh giá kết quả.
 
 ### 2.3 Môi trường vận hành
 
-Hệ thống được chạy trên môi trường web và truy cập thông qua trình duyệt.
+Thông tin môi trường ở mức người dùng:
 
-Thông tin môi trường:
-
-#### 1. Địa chỉ truy cập: http://3.23.53.28/
-#### 2. Trình duyệt khuyến nghị:
-
-- Google Chrome
-- Microsoft Edge
-
-#### 3. Điều kiện hoạt động:
-
-- Frontend đang chạy
-- Backend đang chạy
-- Cơ sở dữ liệu Amazon RDS đang hoạt động
+#### 1. Máy tính cá nhân hoặc môi trường demo có khả năng chạy công cụ dòng lệnh.
+#### 2. Quyền truy cập tới thư mục dự án cần làm việc.
+#### 3. Cấu hình truy cập tới dịch vụ mô hình AI khi cần chạy với mô hình thật.
+#### 4. Quyền ghi dữ liệu cục bộ để lưu phiên và thông tin quan sát.
 
 ### **2.4 Tài khoản sử dụng thử**
 
-#### 1. Tài khoản quản trị viên:
+Hệ thống không sử dụng tài khoản đăng nhập riêng. Người dùng vận hành công cụ thông qua môi trường cục bộ và cấu hình truy cập dịch vụ mô hình AI. Chi tiết tên biến môi trường, tệp cấu hình và lệnh chạy được trình bày trong phần VII.
 
-- Tên đăng nhập: [admin]
-- Mật khẩu: [admin123]
+### **2.5 Quy trình chạy hệ thống**
 
-#### 2. Tài khoản cán bộ tổ chức cán bộ:
+Người dùng thực hiện các bước ở mức sản phẩm như sau:
 
-- Tên đăng nhập: [tccb\_user]
-- Mật khẩu: [tccb1234]
-
-#### 3. Tài khoản nhân viên:
-
-- Tên đăng nhập: [employee\_user]
-- Mật khẩu: [employee1234]
-
-### **2.5 Quy trình đăng nhập hệ thống**
-
-Người dùng thực hiện các bước sau:
-
-#### 1. Mở trình duyệt web.
-#### 2. Truy cập địa chỉ hệ thống.
-#### 3. Nhập tên đăng nhập và mật khẩu.
-#### 4. Nhấn nút Đăng nhập.
-#### 5. Sau khi đăng nhập thành công, hệ thống chuyển tới trang chủ.
-
-Chú thích hình: Giao diện đăng nhập hệ thống
+#### 1. Chuẩn bị môi trường chạy công cụ.
+#### 2. Cấu hình dịch vụ mô hình AI nếu cần.
+#### 3. Mở thư mục dự án cần làm việc.
+#### 4. Chạy yêu cầu mới hoặc chọn một phiên đã có.
+#### 5. Xem kết quả, kiểm tra thông tin phiên và tiếp tục nếu cần.
 
 ### 2.6 Tổng quan giao diện hệ thống
 
-Sau khi đăng nhập thành công, giao diện hệ thống gồm các thành phần chính:
+Hệ thống không có giao diện đồ họa. Giao diện chính là terminal, gồm các thành phần:
 
-#### 1. Thanh menu bên trái:
+#### 1. Dòng lệnh đầu vào:
 
-- Hiển thị các chức năng mà người dùng được phép truy cập.
+- Người dùng truyền yêu cầu và lựa chọn chế độ chạy.
 
-#### 2. Thanh tiêu đề phía trên:
+#### 2. Kết quả đầu ra:
 
-- Hiển thị breadcrumb và menu người dùng.
+- Hệ thống in câu trả lời cuối cùng của agent.
 
-#### 3. Khu vực nội dung chính:
+#### 3. Thông tin quan sát:
 
-- Hiển thị thông tin chi tiết của từng chức năng.
+- Hệ thống có thể ghi nhận sự kiện, lỗi và tiến trình phục vụ kiểm tra.
 
-#### 4. Menu người dùng:
+#### 4. Dữ liệu cục bộ:
 
-- Cho phép đổi mật khẩu và đăng xuất.
-
-![Image: image_089](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_089.png)
+- Hệ thống lưu phiên làm việc và thông tin cần thiết trong phạm vi dự án.
 
 ### 2.7 Hướng dẫn sử dụng theo từng chức năng
 
-#### 2.7.1 Chức năng thống kê tổng quan
+#### 2.7.1 Chức năng chạy yêu cầu mới
 
-Chức năng này hỗ trợ người dùng theo dõi nhanh tình hình nhân sự toàn hệ thống.
+Chức năng này tạo một phiên làm việc mới, gửi yêu cầu tới agent và trả kết quả cho người dùng.
 
-Các bước sử dụng:
+#### 2.7.2 Chức năng tiếp tục phiên gần nhất
 
-##### 1. Truy cập Trang chủ.
-##### 2. Quan sát các thẻ thống kê:
+Chức năng này giúp người dùng tiếp tục ngữ cảnh làm việc gần nhất mà không cần nhớ mã phiên.
 
-- Tổng số nhân sự ⬤
-- Tổng số đơn vị tổ chức ⬤
-- Số lượng nhân sự đang công tác ⬤
+#### 2.7.3 Chức năng mở phiên theo mã
 
-##### 3. Theo dõi các biểu đồ thống kê:
+Chức năng này giúp người dùng quay lại một phiên cụ thể đã lưu trước đó.
 
-- Theo trạng thái công tác ⬤
-- Theo trạng thái hợp đồng ⬤
-- Theo giới tính ⬤
-- Theo trình độ học vấn ⬤
-- Theo đơn vị tổ chức ⬤
-- Theo học hàm ⬤
+#### 2.7.4 Chức năng tạo nhánh phiên
 
-![Image: image_090](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_090.png)
+Chức năng này giúp người dùng thử một hướng xử lý khác từ phiên cũ mà không làm thay đổi lịch sử ban đầu.
 
-![Image: image_091](./PTDAPM_Quản%20Lý%20Nhân%20Sự%20Trường%20Đại%20Học%20Thủy%20Lợi_images/image_091.png)
+#### 2.7.5 Chức năng chọn kiểu agent
+
+Chức năng này giúp người dùng lựa chọn kiểu hành vi phù hợp với tác vụ, ví dụ viết mã, rà soát hoặc giải thích.
+
+#### 2.7.6 Chức năng theo dõi/debug
+
+Chức năng này giúp người dùng kiểm tra tiến trình chạy, lỗi và thông tin phục vụ demo.
 
 ### 2.10. Kết luận
 
-Hệ thống Quản lý Nhân sự đã đáp ứng tốt các yêu cầu cơ bản trong quản lý hồ sơ nhân sự, tài khoản, đơn vị tổ chức và đào tạo. Việc tổ chức chức năng theo từng phân hệ và hướng dẫn thao tác cụ thể giúp người dùng dễ dàng tiếp cận, khai thác và sử dụng hệ thống trong thực tế.
+Hệ thống **fantasticcode** đáp ứng mục tiêu xây dựng một công cụ agent dòng lệnh nhỏ gọn, có thể script hóa, hỗ trợ phiên làm việc, thao tác an toàn trong thư mục dự án, kiểm thử và minh họa nhiều GoF pattern trong cùng một sản phẩm.
+
+# **VI. CÁC MẪU THIẾT KẾ GOF ĐƯỢC ÁP DỤNG**
+
+Phần này tách riêng các mẫu thiết kế GoF khỏi phần phân tích thiết kế hệ thống để trình bày rõ hơn từng mẫu được áp dụng ở đâu, áp dụng như thế nào và mẫu đó giải quyết vấn đề gì trong **fantasticcode**. Mục tiêu không phải liệt kê pattern theo lý thuyết, mà chứng minh mỗi pattern gắn với một vấn đề thật của CLI agent harness.
+
+## **1. Tổng quan phân bổ pattern trong nhóm**
+
+| **Pattern** | **Trạng thái** | **Vị trí trong hệ thống** | **Thành viên phụ trách giải thích** |
+| --- | --- | --- | --- |
+| Facade | Đã cài đặt | `AgentHarness` | Nguyễn Hồng Phúc |
+| Observer | Đã cài đặt | `AgentEventBus`, `ConsoleSink`, `TranscriptSink`, `DebugLogSink` | Nguyễn Hồng Phúc |
+| State | Đã cài đặt | `RunnerStateMachine` và các state object | Hoàng Tùng |
+| Adapter | Đã cài đặt | `OpenAIProviderAdapter`, `AnthropicProviderAdapter`, `AgentConfigAdapter` | Ngô Quang Tùng |
+| Factory Method | Đã cài đặt | `ProviderFactory`, `ProviderFactoryRegistry` | Ngô Quang Tùng |
+| Command | Đã cài đặt | `ReadTool`, `EditTool`, `ApplyPatchTool`, `BashTool` | Nguyễn Hải Ninh |
+| Chain of Responsibility | Đã cài đặt | `PreflightPipeline`, `ToolPolicyPipeline` | Nguyễn Hải Ninh |
+| Memento | Đã cài đặt | `SessionStore.save/load` | Ngô Đức Nam Khánh |
+| Prototype | Đã cài đặt | `SessionStore.fork` và clone cấu hình agent mở rộng | Ngô Đức Nam Khánh |
+| Strategy | Đã cài đặt | `SessionSelectionStrategy` | Hoàng Tùng |
+
+## **2. Sơ đồ tổng quan vị trí các pattern**
+
+```mermaid
+flowchart TD
+    CLI["CLI flags"] --> Facade["Facade: AgentHarness"]
+    Facade --> Preflight["Chain: PreflightPipeline"]
+    Preflight --> Strategy["Strategy: SessionSelectionStrategy"]
+    Preflight --> Factory["Factory Method: ProviderFactoryRegistry"]
+    Factory --> Adapter["Adapter: ModelClient provider adapters"]
+    Facade --> Runner["Runner"]
+    Runner --> State["State: RunnerStateMachine"]
+    Runner --> Observer["Observer: AgentEventBus"]
+    Runner --> ToolChain["Chain: ToolPolicyPipeline"]
+    ToolChain --> Command["Command: ToolCommand"]
+    Runner --> Memento["Memento: SessionStore save/load"]
+    Strategy --> Prototype["Prototype: fork session clone"]
+```
+
+## **3. Các pattern đã cài đặt trong hệ thống**
+
+### **3.1. Facade - `AgentHarness`**
+
+**Áp dụng cụ thể:** `AgentHarness` là điểm vào chính mà CLI gọi sau khi parse flag. Thay vì để `cli.ts` tự điều phối provider, session, preflight, runner, event bus và tool policy, CLI chỉ cần tạo request rồi gọi `harness.run(request)`.
+
+**Vấn đề được giải quyết:** CLI cần một giao diện đơn giản để chạy agent, trong khi bên trong hệ thống có nhiều thành phần phối hợp với nhau. Facade giúp che giấu độ phức tạp này và giữ cho tầng CLI không bị phụ thuộc vào chi tiết nội bộ.
+
+**Nếu không có Facade:** `cli.ts` sẽ phải biết quá nhiều chi tiết như load session, resolve provider, tạo model client, chạy runner và ghi event. Khi thêm provider hoặc tool mới, CLI dễ bị phình to và trở thành nơi chứa logic nghiệp vụ.
+
+### **3.2. Observer - `AgentEventBus` và các sink**
+
+**Áp dụng cụ thể:** `AgentEventBus` phát các sự kiện như bắt đầu run, model trả token, tool được gọi, tool hoàn thành, session được lưu hoặc run bị lỗi. `ConsoleSink`, `TranscriptSink` và `DebugLogSink` đăng ký nhận sự kiện để in console, ghi transcript và ghi debug log.
+
+**Vấn đề được giải quyết:** Runner cần thông báo tiến trình cho nhiều đầu ra khác nhau nhưng không nên phụ thuộc trực tiếp vào từng loại log. Observer tách luồng xử lý chính khỏi các side effect như console, transcript và debug.
+
+**Nếu không có Observer:** Runner phải gọi trực tiếp từng logger. Mỗi khi thêm một loại log hoặc telemetry mới, phải sửa runner, làm tăng coupling và tăng nguy cơ lỗi ở phần logging làm hỏng luồng chạy agent.
+
+### **3.3. State - `RunnerStateMachine`**
+
+**Áp dụng cụ thể:** Quá trình chạy agent được mô hình hóa bằng các trạng thái như `initialized`, `resolving`, `running`, `waitingForTool`, `persisting`, `completed` và `failed`. State machine kiểm soát chuyển trạng thái hợp lệ, ví dụ không cho phép chuyển trực tiếp từ `initialized` sang `running` nếu chưa qua bước resolve.
+
+**Vấn đề được giải quyết:** Agent runner không phải một hàm tuyến tính đơn giản vì nó có thể chờ tool, quay lại model, lưu session hoặc gặp lỗi. State pattern giúp biểu diễn vòng đời runner rõ ràng, dễ kiểm thử và dễ phát hiện chuyển trạng thái sai.
+
+**Nếu không có State:** Trạng thái runner có thể bị xử lý bằng nhiều biến boolean rời rạc như `isRunning`, `isSaving`, `hasFailed`. Cách này dễ sinh trạng thái mâu thuẫn, ví dụ vừa `completed` vừa `failed`, hoặc gọi tool khi run chưa được resolve.
+
+```mermaid
+stateDiagram-v2
+    [*] --> initialized
+    initialized --> resolving
+    resolving --> running
+    resolving --> failed
+    running --> waitingForTool
+    waitingForTool --> running
+    running --> persisting
+    running --> failed
+    waitingForTool --> failed
+    persisting --> completed
+    persisting --> failed
+    completed --> [*]
+    failed --> [*]
+```
+
+### **3.4. Adapter - provider và agent config adapter**
+
+**Áp dụng cụ thể:** `OpenAIProviderAdapter` và `AnthropicProviderAdapter` chuyển đổi SDK/API riêng của từng provider về cùng giao diện nội bộ `ModelClient`. `AgentConfigAdapter` chuyển cấu hình agent từ file cấu hình sang dạng runtime mà runner sử dụng được.
+
+**Vấn đề được giải quyết:** OpenAI, Anthropic và OpenRouter có cách cấu hình, gọi API và trả response khác nhau. Adapter giúp runner chỉ làm việc với một hợp đồng chung, không cần biết provider thật phía sau là gì.
+
+**Nếu không có Adapter:** Runner sẽ phải chứa nhiều nhánh `if/else` theo từng provider. Khi thêm provider mới, logic gọi model và xử lý response sẽ bị rải trong runner, làm hệ thống khó mở rộng và khó kiểm thử.
+
+### **3.5. Factory Method - `ProviderFactory` và `ProviderFactoryRegistry`**
+
+**Áp dụng cụ thể:** `ProviderFactoryRegistry` chọn đúng factory dựa trên provider đã resolve từ chuỗi `provider/model`. Mỗi `ProviderFactory` chịu trách nhiệm tạo adapter tương ứng, ví dụ OpenAI adapter hoặc Anthropic adapter.
+
+**Vấn đề được giải quyết:** Việc tạo provider client cần phụ thuộc vào provider name, API key, base URL, model và capability. Factory Method gom logic khởi tạo này vào đúng nơi, thay vì để runner hoặc preflight tự new từng adapter.
+
+**Nếu không có Factory Method:** Mỗi nơi cần model client có thể tự tạo adapter theo cách khác nhau. Điều này dễ làm sai cấu hình, khó thay đổi provider, và khiến logic khởi tạo bị lặp lại trong nhiều module.
+
+### **3.6. Command - các agentic tool**
+
+**Áp dụng cụ thể:** `ReadTool`, `EditTool`, `ApplyPatchTool` và `BashTool` đều được xem như các command độc lập. Mỗi tool có tên, mô tả, schema input và hàm `execute`. Runner không biết chi tiết cách đọc file, sửa file, apply patch hay chạy shell; runner chỉ gửi tool call vào tool policy pipeline.
+
+**Vấn đề được giải quyết:** Model có thể yêu cầu nhiều hành động khác nhau trong workspace. Command pattern đóng gói từng hành động thành đối tượng có thể validate, log, kiểm soát quyền và thực thi thống nhất.
+
+**Nếu không có Command:** Logic tool sẽ nằm trong một hàm lớn với nhiều nhánh theo tên tool. Thêm tool mới sẽ phải sửa runner hoặc policy pipeline, làm tăng rủi ro phá vỡ các tool cũ.
+
+### **3.7. Chain of Responsibility - preflight và tool policy pipeline**
+
+**Áp dụng cụ thể:** `PreflightPipeline` xử lý chuỗi bước chuẩn bị trước khi run như validate request, resolve workspace, chọn session, chọn agent và resolve provider. `ToolPolicyPipeline` xử lý tool call qua các handler như lookup tool, kiểm tra tool enabled, validate args, sandbox path, kiểm tra rủi ro và thực thi tool.
+
+**Vấn đề được giải quyết:** Mỗi tool call cần đi qua nhiều lớp kiểm tra trước khi được thực thi. Chain of Responsibility cho phép mỗi handler xử lý một trách nhiệm riêng, có thể chặn sớm hoặc chuyển tiếp cho handler kế tiếp.
+
+**Nếu không có Chain of Responsibility:** Toàn bộ kiểm tra sẽ bị dồn vào một hàm lớn. Khi thêm luật an toàn mới cho `bash` hoặc sandbox file, lập trình viên phải sửa logic trung tâm, dễ tạo lỗi bảo mật hoặc bỏ sót bước validate.
+
+```mermaid
+flowchart LR
+    A["Tool call từ model"] --> B["ToolLookupHandler"]
+    B --> C["EnabledToolHandler"]
+    C --> D["ToolArgsHandler"]
+    D --> E["WorkspaceSandboxHandler"]
+    E --> F["RiskPolicyHandler"]
+    F --> G["ToolExecutionHandler"]
+    G --> H["ToolResultEnvelope"]
+```
+
+### **3.8. Memento - lưu và khôi phục session**
+
+**Áp dụng cụ thể:** `SessionStore.save` lưu trạng thái hội thoại, metadata và message vào SQLite. `SessionStore.load` và `loadLatest` khôi phục session để chạy tiếp. Runner không cần biết cấu trúc bảng SQLite, chỉ làm việc với đối tượng session đã được khôi phục.
+
+**Vấn đề được giải quyết:** CLI cần tiếp tục hội thoại sau khi process kết thúc. Memento giúp lưu snapshot trạng thái cần thiết mà không phơi bày chi tiết lưu trữ cho các module khác.
+
+**Nếu không có Memento:** Trạng thái hội thoại chỉ tồn tại trong RAM. Người dùng không thể dùng `--continue` hoặc `--session`, và việc phục hồi sau lỗi hoặc so sánh các nhánh session sẽ khó thực hiện.
+
+### **3.9. Prototype - fork session và clone cấu hình**
+
+**Áp dụng cụ thể:** Khi người dùng dùng `--fork`, hệ thống clone message và metadata từ session gốc để tạo session mới có `parentSessionId`. Agent config mở rộng cũng có thể được clone từ preset gốc trước khi override.
+
+**Vấn đề được giải quyết:** Người dùng cần thử hướng xử lý khác mà không làm thay đổi lịch sử session cũ. Prototype giúp tạo bản sao độc lập từ đối tượng hiện có thay vì dựng lại toàn bộ từ đầu.
+
+**Nếu không có Prototype:** Fork session có thể bị triển khai bằng cách dùng chung tham chiếu dữ liệu với session gốc. Khi session mới thay đổi, session cũ có nguy cơ bị ảnh hưởng hoặc mất tính toàn vẹn lịch sử.
+
+### **3.10. Strategy - chọn hành vi session**
+
+**Áp dụng cụ thể:** `SessionSelectionStrategy` tách các cách chọn session thành các chiến lược riêng: tạo session mới, tiếp tục latest session, load session theo id và fork session. Preflight chọn strategy phù hợp dựa trên flag CLI.
+
+**Vấn đề được giải quyết:** Các flag `--continue`, `--session` và `--fork` tạo ra nhiều hành vi khác nhau. Strategy giúp mỗi hành vi có logic riêng nhưng vẫn dùng chung giao diện chọn session.
+
+**Nếu không có Strategy:** Preflight sẽ chứa nhiều nhánh điều kiện phức tạp. Khi thêm chế độ mới như resume theo workspace hoặc restore từ checkpoint, logic điều kiện sẽ ngày càng khó đọc và khó kiểm thử.
+
+```mermaid
+flowchart TD
+    Flags["CLI flags"] --> Decision{"Chọn strategy"}
+    Decision -->|không có continue/session| New["NewSessionStrategy"]
+    Decision -->|--continue| Latest["ContinueLatestStrategy"]
+    Decision -->|--session id| ById["LoadSessionByIdStrategy"]
+    Decision -->|--fork| Fork["ForkSessionStrategy"]
+    New --> Session["Prepared session"]
+    Latest --> Session
+    ById --> Session
+    Fork --> Session
+```
+
+# **VII. CHI TIẾT TRIỂN KHAI, TECH STACK VÀ KIẾN TRÚC**
+
+Phần VII tập trung vào chi tiết kỹ thuật đã được tách khỏi các phần I đến V. Nội dung này mô tả công nghệ sử dụng, cấu trúc mã nguồn, luồng xử lý nội bộ, lưu trữ dữ liệu, kiểm thử tự động và cách chạy hệ thống ở mức triển khai.
+
+## **1. Tech stack**
+
+| **Nhóm công nghệ** | **Công nghệ sử dụng** | **Vai trò trong hệ thống** |
+| --- | --- | --- |
+| Runtime | Node.js `>=22.12.0` | Môi trường chạy CLI. |
+| Ngôn ngữ | TypeScript | Viết mã nguồn có kiểm tra kiểu tĩnh. |
+| Module system | ESM / NodeNext | Tổ chức import/export theo chuẩn hiện đại. |
+| CLI parser | Commander | Parse flag và hiển thị trợ giúp dòng lệnh. |
+| Provider SDK | OpenAI SDK, Anthropic SDK | Kết nối tới mô hình AI và chuẩn hóa phản hồi. |
+| Lưu trữ | SQLite qua `better-sqlite3` | Lưu session, message và latest pointer cục bộ. |
+| Kiểm thử | Vitest | Unit test, integration test và E2E test. |
+| Dev runtime | tsx | Chạy mã TypeScript trong quá trình phát triển. |
+| Tài liệu | Markdown, MermaidJS | Viết báo cáo và vẽ sơ đồ kiến trúc. |
+
+## **2. Cấu trúc mã nguồn chính**
+
+| **Tệp / thư mục** | **Trách nhiệm** |
+| --- | --- |
+| `src/cli.ts` | Tiếp nhận flag CLI, đọc stdin fallback, xử lý list session và gọi harness. |
+| `src/composition.ts` | Composition root, lắp ghép cấu hình mặc định, provider, session store, tools, runner và event sinks. |
+| `src/config.ts` | Load và merge cấu hình runtime từ mặc định, file cấu hình và local override. |
+| `src/harness.ts` | Facade chính, chạy preflight rồi gọi runner. |
+| `src/preflight.ts` | Chuẩn bị run: validate request, resolve workspace, session, provider, agent và tools. |
+| `src/session-selection.ts` | Các strategy chọn session: tạo mới, continue latest, load theo id và fork. |
+| `src/provider.ts` | Provider registry, provider factory, OpenAI/Anthropic adapter và mapping tool schema. |
+| `src/runner.ts` | Vòng lặp model/tool, lưu session và trả kết quả cuối cùng. |
+| `src/session.ts` | SQLite session store, schema migration, save/load/fork/list. |
+| `src/tool-policy.ts` | Tool registry và chain kiểm tra tool call trước khi thực thi. |
+| `src/tools.ts` | Các tool dựng sẵn: `read`, `edit`, `apply_patch`, `bash`. |
+| `src/workspace.ts` | Sandbox đường dẫn workspace và atomic write. |
+| `src/events.ts` | Event bus, console sink, transcript sink và debug log sink. |
+| `src/state-machine.ts` | State machine kiểm soát vòng đời runner. |
+| `src/contracts.ts` | Các type và interface dùng chung. |
+
+## **3. Kiến trúc tổng thể**
+
+```mermaid
+flowchart TD
+    User["User / Script"] --> CLI["src/cli.ts"]
+    CLI --> Composition["src/composition.ts"]
+    Composition --> Harness["AgentHarness"]
+    Harness --> Preflight["PreflightPipeline"]
+    Preflight --> Config["Runtime config"]
+    Preflight --> SessionStrategy["SessionSelectionStrategy"]
+    Preflight --> ProviderRegistry["ProviderRegistry"]
+    Preflight --> ToolRegistry["ToolRegistry"]
+    Harness --> Runner["Runner"]
+    Runner --> ModelClient["ModelClient adapter"]
+    Runner --> ToolPolicy["ToolPolicyPipeline"]
+    Runner --> Store["SQLite SessionStore"]
+    Runner --> Events["AgentEventBus"]
+    ToolPolicy --> Tools["read / edit / apply_patch / bash"]
+    Tools --> Workspace["Workspace sandbox"]
+```
+
+Luồng xử lý chính là: CLI parse tham số, composition tạo harness, preflight chuẩn bị run, runner gọi model, tool policy xử lý tool call nếu có, session store lưu trạng thái và event bus phát sự kiện cho console/transcript/debug.
+
+## **4. Luồng chạy chi tiết**
+
+```mermaid
+sequenceDiagram
+    actor User as Người dùng
+    participant CLI as cli.ts
+    participant Harness as AgentHarness
+    participant Preflight as PreflightPipeline
+    participant Provider as ModelClient
+    participant Policy as ToolPolicyPipeline
+    participant Store as SessionStore
+    participant Events as AgentEventBus
+    User->>CLI: fantasticcode flags / stdin
+    CLI->>Harness: run(request)
+    Harness->>Preflight: prepare(context)
+    Preflight->>Store: create/load/fork/list session
+    Preflight-->>Harness: PreparedRun
+    Harness->>Events: run.started
+    Harness->>Provider: complete(ModelRequest)
+    Provider-->>Harness: ModelResponse
+    alt Model yêu cầu tool
+        Harness->>Policy: execute(toolCall)
+        Policy-->>Harness: ToolResultEnvelope
+        Harness->>Provider: complete(messages + tool result)
+    end
+    Harness->>Store: save(session)
+    Harness->>Events: run.completed / run.failed
+    Harness-->>CLI: RunResult
+```
+
+## **5. Provider và model adapter**
+
+Hệ thống dùng `ProviderRegistry` để parse selector dạng `provider/model`, resolve cấu hình provider, API key, base URL và model thực tế. Sau đó `ProviderFactoryRegistry` tạo adapter tương ứng. Adapter chuẩn hóa SDK/provider khác nhau về interface nội bộ `ModelClient`, giúp runner không phụ thuộc trực tiếp vào SDK cụ thể.
+
+Các provider built-in gồm `openai`, `anthropic` và `openrouter`.
+
+## **6. Lưu trữ session**
+
+Session được lưu trong `.fantasticcode/state.sqlite` dưới workspace hiện tại. SQLite được cấu hình theo hướng phù hợp cho lưu trữ cục bộ, có schema migration và thao tác save dạng transaction.
+
+```mermaid
+erDiagram
+    sessions ||--o{ session_messages : contains
+    sessions ||--o{ sessions : forks
+    sessions ||--o{ latest_sessions : selected_as_latest
+    sessions {
+        text id PK
+        text parent_session_id FK
+        text agent
+        text provider
+        text model
+        text created_at
+        text updated_at
+        text metadata_json
+    }
+    session_messages {
+        text session_id PK,FK
+        integer position PK
+        text message_json
+    }
+    latest_sessions {
+        text scope PK
+        text session_id FK
+    }
+    schema_migrations {
+        text name PK
+        text applied_at
+    }
+```
+
+Session id có dạng `sess_` cộng 32 ký tự hex. Khi fork, `SessionStore.fork` clone message và metadata từ session nguồn, tạo session mới và lưu `parentSessionId` để thể hiện quan hệ lineage.
+
+## **7. Tool system và policy chain**
+
+Các tool dựng sẵn gồm `read`, `edit`, `apply_patch` và `bash`. Mỗi tool là một `ToolCommand` có tên, mô tả, schema input và hàm `execute`. Trước khi thực thi, tool call đi qua `ToolPolicyPipeline`.
+
+```mermaid
+flowchart LR
+    A["Tool call từ model"] --> B["ToolLookupHandler"]
+    B --> C["EnabledToolHandler"]
+    C --> D["ToolArgsHandler"]
+    D --> E["WorkspaceSandboxHandler"]
+    E --> F["RiskPolicyHandler"]
+    F --> G["ToolExecutionHandler"]
+    G --> H["ToolResultEnvelope"]
+```
+
+Policy chain giúp kiểm tra tool tồn tại, tool có được bật cho agent hay không, input có hợp lệ không, đường dẫn có nằm trong workspace không và thao tác có rủi ro rõ ràng hay không. Riêng `bash` có timeout, output cap và denylist cho lệnh phá hủy.
+
+## **8. Event bus và quan sát hệ thống**
+
+`AgentEventBus` phát event trong quá trình chạy agent. Các sink chính gồm `ConsoleSink`, `TranscriptSink` và `DebugLogSink`. Transcript được ghi dạng NDJSON; debug log cũng dùng NDJSON khi bật debug.
+
+## **9. State machine của runner**
+
+```mermaid
+stateDiagram-v2
+    [*] --> initialized
+    initialized --> resolving
+    resolving --> running
+    resolving --> failed
+    running --> waitingForTool
+    waitingForTool --> running
+    running --> persisting
+    running --> failed
+    waitingForTool --> failed
+    persisting --> completed
+    persisting --> failed
+    completed --> [*]
+    failed --> [*]
+```
+
+`RunnerStateMachine` kiểm soát vòng đời run và từ chối các transition không hợp lệ. Điều này giúp tránh trạng thái mâu thuẫn khi runner vừa chờ tool, vừa lưu session hoặc đã thất bại.
+
+## **10. CLI flags và ví dụ sử dụng**
+
+| **Flag** | **Ý nghĩa** |
+| --- | --- |
+| `-m`, `--model` | Chọn model theo dạng `provider/model`. |
+| `-c`, `--continue` | Tiếp tục session gần nhất. |
+| `-s`, `--session` | Load session theo id. |
+| `--fork` | Tạo session mới từ session đang tiếp tục hoặc session theo id. |
+| `--prompt` | Prompt đầu vào. |
+| `--agent` | Chọn agent preset. |
+| `--workspace` | Chọn workspace làm việc. |
+| `--debug` | Bật debug log. |
+| `--list-sessions` | Liệt kê các session đã lưu. |
+
+```bash
+fantasticcode --model openai/gpt-4.1 --prompt "inspect this repo"
+fantasticcode --continue --prompt "continue the last task"
+fantasticcode --session sess_1234567890abcdef1234567890abcdef --fork --prompt "try another approach"
+fantasticcode --agent reviewer --model openai/gpt-4.1 --prompt "review the repo"
+fantasticcode --list-sessions --workspace .
+```
+
+## **11. Cấu hình và biến môi trường**
+
+Các tệp cấu hình chính gồm `agent-harness.config.example.json`, `agent-harness.config.json` và `agent-harness.local.json`. Các biến môi trường provider thường dùng gồm `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` và `OPENROUTER_API_KEY`.
+
+## **12. Kiểm thử và QA command**
+
+| **Command** | **Mục đích** |
+| --- | --- |
+| `npm run dev` | Chạy CLI trực tiếp bằng TypeScript trong quá trình phát triển. |
+| `npm run typecheck` | Kiểm tra kiểu TypeScript. |
+| `npm test` | Chạy bộ test Vitest. |
+| `npm run test:watch` | Chạy test ở chế độ watch. |
+| `npm run build` | Build ra thư mục `dist`. |
+| `npm run qa` | Chạy typecheck, test, build, pack dry-run và smoke test CLI help. |
+
+Các nhóm test nằm trong thư mục `test/`, bao phủ CLI, config, provider, session, preflight, runner, tools, events, state machine và E2E harness flow.
+
+## **13. Ghi chú triển khai**
+
+- Public CLI binary là `fantasticcode`.
+- Package export chính trỏ tới `dist/index.js` sau khi build.
+- Session, transcript và debug log được tạo trong thư mục `.fantasticcode` của workspace.
+- Mặc định code hiện tại dùng model `openai/gpt-5.4-mini`; một số ví dụ tài liệu dùng model minh họa khác để người đọc dễ hiểu.
 
 # **Kết luận**
 
-Sau khi hoàn thành bài tập lớn này, chúng em đã nắm bắt và hiểu rõ hơn những kiến thức cốt lõi của môn học *Phát triển dự án phần mềm*, đặc biệt là quy trình phân tích yêu cầu khách hàng trong việc xây dựng phần mềm. Thông qua đề tài quản lý nhân sự Trường Đại học Thủy Lợi, chúng em đã có cơ hội vận dụng các kiến thức lý thuyết đã học để tiếp cận, phân tích và mô hình hóa một bài toán thực tế trong môi trường giáo dục đại học.
+Sau khi hoàn thành bài tập lớn này, nhóm chúng em đã hiểu rõ hơn cách phân tích yêu cầu, lập kế hoạch, thiết kế, triển khai và kiểm thử một dự án phần mềm. Thông qua đề tài **fantasticcode**, nhóm có cơ hội áp dụng kiến thức về design pattern vào một hệ thống cụ thể thay vì chỉ trình bày lý thuyết.
 
-Những kết quả đạt được trong bài tập lớn là bước khởi đầu giúp chúng em hệ thống hóa kiến thức, rèn luyện tư duy phân tích và nâng cao khả năng làm việc nhóm. Việc kết hợp nội dung môn học này với các môn chuyên ngành khác sẽ là nền tảng quan trọng, hỗ trợ chúng em áp dụng hiệu quả vào học tập cũng như công việc trong tương lai.
+Kết quả đạt được gồm một công cụ agent dòng lệnh có thể chạy được, có khả năng duy trì phiên làm việc, hỗ trợ thao tác an toàn trong thư mục dự án, có kiểm thử và có tài liệu giải thích design pattern rõ ràng. Quan trọng hơn, mỗi pattern được gắn với một trách nhiệm thật trong hệ thống, giúp việc giải thích và bảo trì trở nên rõ ràng hơn.
+
+Những kết quả này là nền tảng để nhóm tiếp tục mở rộng hệ thống trong tương lai, ví dụ thêm provider mới, thêm tool mới, bổ sung approval flow hoặc cải thiện chính sách an toàn cho workspace.
 
 # **Lời cảm ơn**
 
-Nhóm chúng em xin gửi lời cảm ơn chân thành đến **thầy Cù Việt Dũng** đã hướng dẫn, truyền đạt một số kiến thức và kinh nghiệm trong quá trình thực hiện bài tập lớn. Những góp ý và chỉ dẫn của thầy đã giúp chúng em định hướng đúng đắn và hoàn thiện hơn nội dung phân tích yêu cầu của đề tài.
+Nhóm chúng em xin gửi lời cảm ơn chân thành đến **thầy Cù Việt Dũng** đã hướng dẫn, truyền đạt kiến thức và định hướng trong quá trình thực hiện bài tập lớn. Những góp ý của thầy đã giúp nhóm hiểu rõ hơn cách xây dựng tài liệu phát triển dự án phần mềm và cách áp dụng mẫu thiết kế vào hệ thống thực tế.
 
 Do thời gian và kinh nghiệm còn hạn chế, bài làm của nhóm chúng em khó tránh khỏi những thiếu sót. Chúng em rất mong nhận được sự cảm thông, góp ý và nhận xét từ thầy để đề tài được hoàn thiện hơn.
 

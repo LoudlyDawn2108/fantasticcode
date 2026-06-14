@@ -1,4 +1,4 @@
-import type { AgentPreset, HarnessDefaults, ModelClient, PreparedRun, ProviderConfig, RunRequest, RunnerConfig, Session } from "./contracts.js";
+import type { AgentPreset, HarnessDefaults, ModelClient, PreparedRun, ProviderConfig, RunRequest, Session } from "./contracts.js";
 import { AgentRegistry } from "./agent.js";
 import { createEventBus, createSessionStore, createToolRegistry } from "./construction.js";
 import { HarnessError } from "./errors.js";
@@ -21,7 +21,6 @@ export interface PreflightContext {
   eventBus: AgentEventBus;
   sessionSelectionResolver: SessionSelectionStrategyResolver;
   defaults: HarnessDefaults;
-  runner: RunnerConfig;
   selectedAgentName?: string;
   agent?: AgentPreset;
   session?: Session;
@@ -56,7 +55,6 @@ export function createPreflightContext(input: {
   providers?: ProviderConfig[];
   agentPresets: AgentPreset[];
   defaults?: HarnessDefaults;
-  runner: RunnerConfig;
   debug?: boolean;
   console?: boolean;
 }): PreflightContext {
@@ -77,7 +75,6 @@ export function createPreflightContext(input: {
     }),
     sessionSelectionResolver: new SessionSelectionStrategyResolver(),
     defaults: input.defaults ?? {},
-    runner: input.runner,
   };
 }
 
@@ -165,7 +162,6 @@ function finalizePreparedRun(input: PreflightContext): PreparedRun {
     eventBus: input.eventBus,
     workspace: input.workspace,
     updateLatest: input.updateLatest ?? true,
-    maxToolTurns: input.runner.maxToolTurns,
   };
 }
 

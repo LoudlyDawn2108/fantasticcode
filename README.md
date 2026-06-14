@@ -38,7 +38,7 @@ built-in defaults
   -> CLI/runtime overrides
 ```
 
-`agent-harness.config.json` is intended for shared provider, model, runner, and agent settings. `agent-harness.local.json` is for private API keys and local overrides.
+`agent-harness.config.json` is intended for shared provider, model, and agent settings. `agent-harness.local.json` is for private API keys and local overrides.
 
 Copy `agent-harness.config.example.json` to `agent-harness.config.json` in your workspace to start from a working OpenAI provider configuration.
 
@@ -66,8 +66,7 @@ Agents use JSON metadata plus Markdown prompt bodies:
       "promptFile": "./agents/reviewer.md",
       "enabledTools": ["read", "bash"]
     }
-  },
-  "runner": { "maxToolTurns": 8 }
+  }
 }
 ```
 

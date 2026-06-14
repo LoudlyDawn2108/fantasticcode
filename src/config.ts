@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AgentConfigAdapter, type AgentConfig } from "./agent.js";
-import type { HarnessDefaults, HarnessSettings, ModelConfig, ProviderConfig, RunnerConfig } from "./contracts.js";
+import type { HarnessDefaults, HarnessSettings, ModelConfig, ProviderConfig } from "./contracts.js";
 import { HarnessError } from "./errors.js";
 import { defaultProviderConfigs } from "./provider.js";
 
@@ -11,7 +11,6 @@ export interface HarnessConfigFile {
   defaults?: HarnessDefaults;
   providers?: Record<string, ProviderConfigFile>;
   agents?: Record<string, AgentConfig>;
-  runner?: Partial<RunnerConfig>;
 }
 
 export interface ProviderConfigFile {
@@ -44,7 +43,6 @@ export function loadRuntimeConfig(options: RuntimeConfigOptions): HarnessSetting
 
   const providers = options.overrides?.providers ?? normalizeProviders(merged.providers ?? {});
   const defaults = normalizeDefaults(merged.defaults ?? {}, providers);
-  const runner = { maxToolTurns: merged.runner?.maxToolTurns ?? 8 };
   const agentPresets = options.overrides?.agentPresets ?? new AgentConfigAdapter({ workspaceRoot, promptBaseDir: agentRoot, additionalPromptRoots: [agentRoot] }).load(merged.agents ?? {});
 
   return {
@@ -52,7 +50,6 @@ export function loadRuntimeConfig(options: RuntimeConfigOptions): HarnessSetting
     providers,
     agentPresets,
     defaults: { ...defaults, ...(options.overrides?.defaults ?? {}) },
-    runner: options.overrides?.runner ?? runner,
     ...(options.overrides?.debug === undefined ? {} : { debug: options.overrides.debug }),
     ...(options.overrides?.console === undefined ? {} : { console: options.overrides.console }),
   };
@@ -77,7 +74,6 @@ function builtInConfig(env: NodeJS.ProcessEnv, agentRoot: string): HarnessConfig
         enabledTools: ["read", "bash"],
       },
     },
-    runner: { maxToolTurns: 8 },
   };
 }
 
@@ -105,7 +101,6 @@ function validateHarnessConfig(value: unknown, path: string): HarnessConfigFile 
     ...(object.defaults === undefined ? {} : { defaults: validateDefaults(object.defaults, path) }),
     ...(object.providers === undefined ? {} : { providers: validateProviders(object.providers, path) }),
     ...(object.agents === undefined ? {} : { agents: validateAgents(object.agents, path) }),
-    ...(object.runner === undefined ? {} : { runner: validateRunner(object.runner, path) }),
   };
 }
 
@@ -182,21 +177,12 @@ function validateAgents(value: unknown, path: string): Record<string, AgentConfi
   return agents;
 }
 
-function validateRunner(value: unknown, path: string): Partial<RunnerConfig> {
-  const object = asObject(value, `runner at ${path}`);
-  const runner: Partial<RunnerConfig> = {};
-  const maxToolTurns = readOptionalNumber(object, "maxToolTurns");
-  if (maxToolTurns !== undefined) runner.maxToolTurns = maxToolTurns;
-  return runner;
-}
-
 function mergeHarnessConfig(base: HarnessConfigFile, override: HarnessConfigFile): HarnessConfigFile {
   return {
     version: 1,
     defaults: { ...(base.defaults ?? {}), ...(override.defaults ?? {}) },
     providers: mergeRecord(base.providers, override.providers),
     agents: mergeRecord(base.agents, override.agents),
-    runner: { ...(base.runner ?? {}), ...(override.runner ?? {}) },
   };
 }
 

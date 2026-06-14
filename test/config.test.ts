@@ -31,7 +31,6 @@ describe("runtime config", () => {
           agents: {
             coder: { promptFile: "agents/coder.md", enabledTools: ["read", "bash"] },
           },
-          runner: { maxToolTurns: 3 },
         },
         null,
         2,
@@ -40,7 +39,6 @@ describe("runtime config", () => {
 
     const settings = loadRuntimeConfig({ workspaceRoot: workspace.root });
     expect(settings.defaults?.model).toBe("local/main");
-    expect(settings.runner?.maxToolTurns).toBe(3);
     expect(settings.providers?.find((provider) => provider.name === "local")).toMatchObject({ baseURL: "http://localhost/v1", apiKey: "secret" });
     expect(settings.agentPresets?.find((agent) => agent.name === "coder")).toMatchObject({ systemPrompt: "Project coder prompt", enabledTools: ["read", "bash"] });
   });

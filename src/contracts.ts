@@ -135,10 +135,6 @@ export interface HarnessDefaults {
   agent?: string;
 }
 
-export interface RunnerConfig {
-  maxToolTurns: number;
-}
-
 export type SessionMessage = ModelMessage;
 
 export interface Session {
@@ -236,7 +232,6 @@ export interface PreparedRun {
   eventBus: AgentEventBus;
   workspace: Workspace;
   updateLatest: boolean;
-  maxToolTurns: number;
 }
 
 export interface HarnessSettings {
@@ -244,7 +239,6 @@ export interface HarnessSettings {
   providers?: ProviderConfig[];
   agentPresets?: AgentPreset[];
   defaults?: HarnessDefaults;
-  runner?: RunnerConfig;
   debug?: boolean;
   console?: boolean;
 }

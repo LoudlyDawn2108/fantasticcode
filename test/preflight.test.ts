@@ -2,13 +2,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import { PreflightPipeline, createPreflightContext } from "../src/preflight.js";
 import { SessionStore } from "../src/session.js";
 import { createTempWorkspace, type TempWorkspace } from "./helpers/temp-workspace.js";
-import type { AgentPreset, RunnerConfig } from "../src/contracts.js";
+import type { AgentPreset } from "../src/contracts.js";
 
 const agentPresets: AgentPreset[] = [
   { name: "coder", systemPrompt: "code", enabledTools: ["read", "edit", "apply_patch", "bash"] },
   { name: "reviewer", systemPrompt: "review", enabledTools: ["read", "bash"] },
 ];
-const runner: RunnerConfig = { maxToolTurns: 8 };
 const defaults = { agent: "coder" };
 
 describe("PreflightPipeline", () => {
@@ -30,7 +29,6 @@ describe("PreflightPipeline", () => {
           providers: [{ name: "openai", baseURL: "http://local", apiKeyEnv: "KEY" }],
           agentPresets,
           defaults,
-          runner,
         }),
       ),
     ).rejects.toThrow("cannot be used together");
@@ -46,7 +44,6 @@ describe("PreflightPipeline", () => {
         providers: [{ name: "openai", baseURL: "http://local", apiKeyEnv: "KEY" }],
         agentPresets,
         defaults,
-        runner,
       }),
     );
     delete process.env.KEY;
@@ -68,7 +65,6 @@ describe("PreflightPipeline", () => {
         providers: [{ name: "openai", baseURL: "http://local", apiKeyEnv: "KEY" }],
         agentPresets,
         defaults,
-        runner,
       }),
     );
 
@@ -94,7 +90,6 @@ describe("PreflightPipeline", () => {
         providers: [{ name: "openai", baseURL: "http://local", apiKeyEnv: "KEY" }],
         agentPresets,
         defaults,
-        runner,
       }),
     );
 

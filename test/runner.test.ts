@@ -40,7 +40,6 @@ describe("Runner", () => {
       eventBus: new AgentEventBus(),
       workspace: new Workspace(temp.root),
       updateLatest: true,
-      maxToolTurns: 8,
     });
     expect(result.output).toBe("done");
     expect((await store.loadLatest()).messages.at(-1)).toEqual({ role: "assistant", content: "done" });
@@ -79,7 +78,6 @@ describe("Runner", () => {
       eventBus: new AgentEventBus(),
       workspace: new Workspace(temp.root),
       updateLatest: true,
-      maxToolTurns: 8,
     });
     expect(result.output).toBe("read complete");
     expect((await store.loadLatest()).messages.some((message) => message.role === "tool")).toBe(true);

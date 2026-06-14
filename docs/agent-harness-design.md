@@ -761,7 +761,7 @@ Rules:
 
 - `AgentRegistry` selects already-built presets; it does not parse JSON or Markdown.
 - `AgentConfigAdapter` loads prompt Markdown and normalizes config into `AgentPreset`.
-- Agent config must not include runner execution limits. Tool-turn limits belong in `RunnerConfig`.
+- Agent config must not include runner execution limits. Tool authorization and sandboxing stay in `ToolPolicyPipeline`.
 - Prototype is used only when `extends` is present; otherwise agent configs are direct presets.
 
 ### SDK Provider Adapters
@@ -915,7 +915,7 @@ The `bash` tool should have the strictest policy:
 8. If the model requests tools, move to waitingForTool.
 9. Execute ToolCommand objects through ToolPolicyPipeline.
 10. Emit tool lifecycle events and append normalized tool results.
-11. Repeat running/waitingForTool until final assistant text or max tool turns.
+11. Repeat running/waitingForTool until final assistant text or an existing error path stops the run.
 12. Move to persisting, save the session, update latest, and emit session:saved.
 13. Move to completed or failed and return the final result.
 ```
@@ -962,7 +962,7 @@ This flow keeps the runner deterministic while using the v1 patterns deliberatel
 9. Add `PreflightPipeline` and `ToolPolicyPipeline` handlers.
 10. Add `AgentEventBus` with console, transcript, and debug log sinks.
 11. Add `RunnerStateMachine` with explicit lifecycle states and legal transitions.
-12. Add a bounded runner loop with a max tool-turn limit.
+12. Add the runner loop for model responses, tool calls, and final assistant output.
 13. Persist every run and update the DB-backed latest-session pointer.
 
 The result is still small enough for a learning project, but it demonstrates ten concrete GoF patterns used by production-style agent systems.

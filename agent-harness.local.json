@@ -17,8 +17,5 @@
         }
       }
     }
-  },
-  "runner": {
-    "maxToolTurns": 8
   }
 }

@@ -9,7 +9,6 @@ export function createDefaultHarness(settings: Partial<HarnessSettings> = {}): A
     ...(settings.providers === undefined ? {} : { providers: settings.providers }),
     ...(settings.agentPresets === undefined ? {} : { agentPresets: settings.agentPresets }),
     ...(settings.defaults === undefined ? {} : { defaults: settings.defaults }),
-    ...(settings.runner === undefined ? {} : { runner: settings.runner }),
     ...(settings.debug === undefined ? {} : { debug: settings.debug }),
     ...(settings.console === undefined ? {} : { console: settings.console }),
   });

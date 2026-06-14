@@ -22,7 +22,6 @@ export class AgentHarness {
       ...(this.settings.providers === undefined ? {} : { providers: this.settings.providers }),
       agentPresets: this.settings.agentPresets ?? [],
       ...(this.settings.defaults === undefined ? {} : { defaults: this.settings.defaults }),
-      runner: this.settings.runner ?? { maxToolTurns: 8 },
       ...(debug === undefined ? {} : { debug }),
       ...(this.settings.console === undefined ? {} : { console: this.settings.console }),
     };
