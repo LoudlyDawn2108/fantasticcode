@@ -986,29 +986,168 @@ flowchart TD
 
 ## **3. Các pattern đã cài đặt trong hệ thống**
 
-### **3.1. Facade - `AgentHarness`**
+### **3.1. Facade Pattern (Mẫu thiết kế Mặt tiền)**
 
-**Áp dụng cụ thể:** `AgentHarness` là điểm vào chính mà CLI gọi sau khi parse flag. Thay vì để `cli.ts` tự điều phối provider, session, preflight, runner, event bus và tool policy, CLI chỉ cần tạo request rồi gọi `harness.run(request)`.
+**a. Vấn đề được giải quyết:**
+Quá trình khởi chạy một agent không hề đơn giản. Nó đòi hỏi phải: đọc file cấu hình, chuẩn bị preflight, resolve provider/model, kết nối database SQLite để load session, tiêm các tools, và gắn các bộ lắng nghe sự kiện (Event Bus). Nếu đặt toàn bộ khối logic khổng lồ này vào file giao diện dòng lệnh (`cli.ts`), mã nguồn sẽ phình to, rối rắm và vi phạm nghiêm trọng nguyên lý Single Responsibility. 
 
-**Vấn đề được giải quyết:** CLI cần một giao diện đơn giản để chạy agent, trong khi bên trong hệ thống có nhiều thành phần phối hợp với nhau. Facade giúp che giấu độ phức tạp này và giữ cho tầng CLI không bị phụ thuộc vào chi tiết nội bộ.
+**b. Phân tích kiến trúc và Ánh xạ vai trò chi tiết:**
 
-**Nếu không có Facade:** `cli.ts` sẽ phải biết quá nhiều chi tiết như load session, resolve provider, tạo model client, chạy runner và ghi event. Khi thêm provider hoặc tool mới, CLI dễ bị phình to và trở thành nơi chứa logic nghiệp vụ.
+*Vai trò 1: Facade (Mặt tiền)*
+`AgentHarness` đóng vai trò là một giao diện duy nhất, che giấu đi toàn bộ sự phức tạp của hệ thống nội bộ. Nó tự động tạo ngữ cảnh và phối hợp các thành phần con.
+```typescript
+// File: src/harness.ts
+export class AgentHarness {
+  constructor(
+    settings: HarnessSettings,
+    private readonly preflight = new PreflightPipeline(),
+    private readonly runner = createRunner(),
+  ) {
+    this.settings = loadRuntimeConfig({ workspaceRoot: settings.workspaceRoot, overrides: settings });
+  }
 
-### **3.2. Observer - `AgentEventBus` và các sink**
+  // Phương thức mặt tiền, che giấu mọi thao tác phức tạp
+  async run(request: RunRequest): Promise<RunResult> {
+    const contextInput = { request, workspaceRoot: ... }; // Gom tham số
+    
+    // Giao tiếp với các thành phần hệ thống nội bộ (Subsystems)
+    const prepared = await this.preflight.prepare(createPreflightContext(contextInput));
+    return this.runner.run(prepared);
+  }
+}
+```
 
-**Áp dụng cụ thể:** `AgentEventBus` phát các sự kiện như bắt đầu run, model trả token, tool được gọi, tool hoàn thành, session được lưu hoặc run bị lỗi. `ConsoleSink`, `TranscriptSink` và `DebugLogSink` đăng ký nhận sự kiện để in console, ghi transcript và ghi debug log.
+*Vai trò 2: Subsystems (Các hệ thống con phức tạp)*
+Là các thành phần nằm bên dưới mà Facade đang quản lý như `PreflightPipeline`, `Runner`, `loadRuntimeConfig`. Lớp gọi từ bên ngoài không cần biết đến sự tồn tại của chúng.
 
-**Vấn đề được giải quyết:** Runner cần thông báo tiến trình cho nhiều đầu ra khác nhau nhưng không nên phụ thuộc trực tiếp vào từng loại log. Observer tách luồng xử lý chính khỏi các side effect như console, transcript và debug.
+*Vai trò 3: Client (Nơi gọi)*
+Giao diện dòng lệnh (`cli.ts`) đóng vai trò Client. Nó chỉ việc "bấm nút" `run()` trên mặt tiền mà không cần quan tâm đằng sau mặt tiền đó hoạt động ra sao.
+```typescript
+// File: src/cli.ts
+// Lớp Client trở nên cực kỳ tinh gọn
+const harness = await createHarness(settings);
+const result = await harness.run({ prompt, ...options });
+```
 
-**Nếu không có Observer:** Runner phải gọi trực tiếp từng logger. Mỗi khi thêm một loại log hoặc telemetry mới, phải sửa runner, làm tăng coupling và tăng nguy cơ lỗi ở phần logging làm hỏng luồng chạy agent.
+**c. Kết quả đạt được:**
+Giảm sự phụ thuộc (Loose Coupling) giữa tầng giao diện (CLI) và tầng nghiệp vụ (Runner, Config). Mã nguồn dễ bảo trì hơn, và hoàn toàn có thể tái sử dụng `AgentHarness` cho một giao diện đồ họa (GUI) trong tương lai thay vì chỉ dùng cho CLI.
 
-### **3.3. State - `RunnerStateMachine`**
+### **3.2. Observer Pattern (Mẫu thiết kế Quan sát viên)**
 
-**Áp dụng cụ thể:** Quá trình chạy agent được mô hình hóa bằng các trạng thái như `initialized`, `resolving`, `running`, `waitingForTool`, `persisting`, `completed` và `failed`. State machine kiểm soát chuyển trạng thái hợp lệ, ví dụ không cho phép chuyển trực tiếp từ `initialized` sang `running` nếu chưa qua bước resolve.
+**a. Vấn đề được giải quyết:**
+Khi Runner đang chạy, nó cần in log ra màn hình console, ghi lại toàn bộ lịch sử trò chuyện (transcript) vào file, và ghi log debug. Nếu Runner gọi trực tiếp các hàm ghi file/in console này, nó sẽ vi phạm nguyên lý thiết kế vì "việc chạy mô hình" và "việc in chữ ra màn hình" là 2 trách nhiệm khác nhau. Nếu một ngày muốn thêm gửi thông báo qua Slack, ta lại phải sửa code của Runner.
 
-**Vấn đề được giải quyết:** Agent runner không phải một hàm tuyến tính đơn giản vì nó có thể chờ tool, quay lại model, lưu session hoặc gặp lỗi. State pattern giúp biểu diễn vòng đời runner rõ ràng, dễ kiểm thử và dễ phát hiện chuyển trạng thái sai.
+**b. Phân tích kiến trúc và Ánh xạ vai trò chi tiết:**
 
-**Nếu không có State:** Trạng thái runner có thể bị xử lý bằng nhiều biến boolean rời rạc như `isRunning`, `isSaving`, `hasFailed`. Cách này dễ sinh trạng thái mâu thuẫn, ví dụ vừa `completed` vừa `failed`, hoặc gọi tool khi run chưa được resolve.
+*Vai trò 1: Subject (Chủ thể phát sự kiện)*
+`AgentEventBus` là đối tượng trung tâm quản lý danh sách những kẻ tò mò muốn biết (Observers) và thông báo (Publish) cho họ khi có việc xảy ra.
+```typescript
+// File: src/events.ts
+export class AgentEventBus {
+  private readonly handlers = new Set<AgentEventHandler>(); // Lưu danh sách Observer
+
+  // Cho phép Observer đăng ký nhận tin
+  subscribe(handler: AgentEventHandler): () => void {
+    this.handlers.add(handler);
+    return () => this.handlers.delete(handler);
+  }
+
+  // Phát loa thông báo cho mọi Observer
+  async publish(event: AgentEvent): Promise<void> {
+    for (const handler of this.handlers) {
+      await handler(event);
+    }
+  }
+}
+```
+
+*Vai trò 2: Observer (Quan sát viên)*
+Bất kỳ thành phần nào muốn nghe ngóng thông tin. Dự án định nghĩa Interface `AgentEventSink` bắt buộc các Observer phải có hàm `handle()`.
+```typescript
+// File: src/events.ts
+export interface AgentEventSink {
+  handle(event: AgentEvent): void | Promise<void>;
+}
+```
+
+*Vai trò 3: Concrete Observer (Các quan sát viên cụ thể)*
+Các lớp như `ConsoleSink`, `TranscriptSink`, `DebugLogSink` đăng ký nghe và tự xử lý sự kiện theo cách riêng của chúng.
+```typescript
+// File: src/events.ts
+export class ConsoleSink implements AgentEventSink {
+  handle(event: AgentEvent): void {
+    switch (event.type) {
+      case "run:started":
+        this.write(`run started: ${event.sessionId}\n`); return;
+      case "tool:completed":
+        this.write(`tool completed: ${event.name}\n`); return;
+    }
+  }
+}
+
+export class TranscriptSink implements AgentEventSink {
+  async handle(event: AgentEvent): Promise<void> {
+    // Tự động ghi ra file thay vì in console
+    await appendFile(path, `${JSON.stringify(event)}\n`, "utf8");
+  }
+}
+```
+
+**c. Kết quả đạt được:**
+Thỏa mãn **Nguyên lý Đóng/Mở (OCP)**. Khi muốn thêm tính năng bắn sự kiện lên Slack, ta chỉ cần tạo một lớp `SlackSink` (implements `AgentEventSink`) và gắn vào EventBus. Mã nguồn cốt lõi của Runner không hề hay biết và cũng không cần bị chỉnh sửa.
+
+### **3.3. State Pattern (Mẫu thiết kế Trạng thái)**
+
+**a. Vấn đề được giải quyết:**
+Vòng đời chạy của một Agent đi qua nhiều giai đoạn: Khởi tạo -> Chuẩn bị (Resolving) -> Chạy (Running) -> Đợi công cụ (WaitingForTool) -> Lưu trữ (Persisting) -> Hoàn thành. Việc chuyển từ trạng thái này sang trạng thái khác có những quy định nghiêm ngặt (VD: Không thể từ `initialized` nhảy thẳng tới `completed`). Nếu dùng biến boolean (như `isRunning`, `isDone`) và nhồi một đống lệnh `if/else`, code sẽ đầy lỗ hổng và rủi ro chuyển sai trạng thái.
+
+**b. Phân tích kiến trúc và Ánh xạ vai trò chi tiết:**
+
+*Vai trò 1: State (Giao diện Trạng thái chung)*
+Quy định mọi trạng thái đều phải có tên và có quyền quyết định chuyển sang trạng thái nào tiếp theo (`transitionTo`).
+```typescript
+// File: src/state-machine.ts
+export interface RunnerState {
+  readonly name: RunnerStateName;
+  enter(ctx: RunnerStateContext): void;
+  transitionTo(next: RunnerStateName): RunnerState; // Hàm quyết định chuyển trạng thái
+}
+```
+
+*Vai trò 2: Concrete State (Các trạng thái cụ thể)*
+Mỗi trạng thái tự ôm logic chặn/cho phép của riêng nó, không quan tâm trạng thái khác.
+```typescript
+// File: src/state-machine.ts
+// Trạng thái Đang Chạy
+class RunningState extends BaseRunnerState {
+  readonly name = "running";
+
+  transitionTo(next: RunnerStateName): RunnerState {
+    if (next === "waitingForTool") return new WaitingForToolState();
+    if (next === "persisting") return new PersistingState();
+    if (next === "failed") return new FailedState();
+    return this.invalidTransition(next); // Chặn đứng mọi sự luân chuyển trái phép khác
+  }
+}
+```
+
+*Vai trò 3: Context (Ngữ cảnh máy trạng thái)*
+Lớp `RunnerStateMachine` làm nhiệm vụ chứa trạng thái hiện tại và đại diện cho hệ thống ra lệnh chuyển trạng thái.
+```typescript
+// File: src/state-machine.ts
+export class RunnerStateMachine {
+  private current: RunnerState = new InitializedState(); // Trạng thái mặc định
+
+  transitionTo(next: RunnerStateName): void {
+    // Uỷ quyền quyết định cho chính trạng thái hiện tại
+    this.current = this.current.transitionTo(next);
+    this.current.enter(this);
+  }
+}
+```
+
+**c. Kết quả đạt được:**
+Toàn bộ logic chặn luồng (`if/else`) phức tạp được tháo gỡ khỏi Runner và tản đều vào các class State. Khi cần thêm một trạng thái mới (Ví dụ: `Paused`), chỉ cần tạo một class `PausedState` và định nghĩa quy tắc cho nó, giảm thiểu rủi ro sinh ra bug (lỗi) do logic mâu thuẫn.
 
 ```mermaid
 stateDiagram-v2
@@ -1206,21 +1345,111 @@ export class ProviderFactoryRegistry {
 **c. Kết quả đạt được:**
 Dự án tuân thủ triệt để **Nguyên lý Đóng/Mở (Open/Closed Principle - OCP)**. Kiến trúc sẵn sàng đón nhận các yêu cầu mới. Khi muốn bổ sung mô hình AI mới (Google Gemini), lập trình viên chỉ việc tạo ra một lớp Factory mới (`GeminiProviderFactory`), cài đặt nó kế thừa Creator, và gắn vào Registry. Không có bất kỳ dòng lệnh `if/else` lõi nào bị thay đổi.
 
-### **3.6. Command - các agentic tool**
+### **3.6. Command Pattern (Mẫu thiết kế Mệnh lệnh)**
 
-**Áp dụng cụ thể:** `ReadTool`, `EditTool`, `ApplyPatchTool` và `BashTool` đều được xem như các command độc lập. Mỗi tool có tên, mô tả, schema input và hàm `execute`. Runner không biết chi tiết cách đọc file, sửa file, apply patch hay chạy shell; runner chỉ gửi tool call vào tool policy pipeline.
+**a. Vấn đề được giải quyết:**
+Khi mô hình AI (Model) yêu cầu thực thi một hành động trong không gian làm việc (ví dụ: Đọc file, sửa file, chạy bash), làm sao để hệ thống có thể nhận diện, kiểm tra an toàn (validate), và thực thi nó mà không cần viết các lệnh rẽ nhánh khổng lồ trong Runner? Nếu dùng một vòng `switch-case` cho mỗi hành động, Runner sẽ phải chứa tất cả logic đọc/ghi file và gọi hệ điều hành, làm hỏng hoàn toàn kiến trúc.
 
-**Vấn đề được giải quyết:** Model có thể yêu cầu nhiều hành động khác nhau trong workspace. Command pattern đóng gói từng hành động thành đối tượng có thể validate, log, kiểm soát quyền và thực thi thống nhất.
+**b. Phân tích kiến trúc và Ánh xạ vai trò chi tiết:**
 
-**Nếu không có Command:** Logic tool sẽ nằm trong một hàm lớn với nhiều nhánh theo tên tool. Thêm tool mới sẽ phải sửa runner hoặc policy pipeline, làm tăng rủi ro phá vỡ các tool cũ.
+*Vai trò 1: Command (Lệnh trừu tượng)*
+Giao diện chung ép mọi "công cụ" (tool) phải có chung một chuẩn mực: Tên, Mô tả, Cấu trúc tham số (Schema) và hàm thực thi (`execute`).
+```typescript
+// File: src/contracts.ts
+export interface ToolCommand {
+  readonly name: string;
+  readonly description: string;
+  readonly schema: JsonSchema;
+  execute(ctx: ToolContext, input: JsonObject): Promise<unknown>;
+}
+```
 
-### **3.7. Chain of Responsibility - preflight và tool policy pipeline**
+*Vai trò 2: Concrete Command (Lệnh cụ thể)*
+Các chức năng thực tế được tách thành các lớp riêng biệt như `ReadTool`, `EditTool`, `BashTool`, `ApplyPatchTool`.
+```typescript
+// File: src/tools.ts
+export class EditTool implements ToolCommand {
+  readonly name = "edit";
+  readonly schema: JsonSchema = { /* ...định nghĩa input path, oldText, newText... */ };
 
-**Áp dụng cụ thể:** `PreflightPipeline` xử lý chuỗi bước chuẩn bị trước khi run như validate request, resolve workspace, chọn session, chọn agent và resolve provider. `ToolPolicyPipeline` xử lý tool call qua các handler như lookup tool, kiểm tra tool enabled, validate args, sandbox path, kiểm tra rủi ro và thực thi tool.
+  // Logic cụ thể được đóng gói gọn gàng ở đây
+  async execute(ctx: ToolContext, input: JsonObject): Promise<unknown> {
+    const current = await ctx.workspace.readText(path, MAX_READ_BYTES);
+    const next = current.replace(oldText, newText);
+    await ctx.workspace.atomicWriteText(path, next);
+    return { path, changed: true };
+  }
+}
+```
 
-**Vấn đề được giải quyết:** Mỗi tool call cần đi qua nhiều lớp kiểm tra trước khi được thực thi. Chain of Responsibility cho phép mỗi handler xử lý một trách nhiệm riêng, có thể chặn sớm hoặc chuyển tiếp cho handler kế tiếp.
+*Vai trò 3: Invoker (Người gọi)*
+Bản thân Runner/ToolPolicyPipeline đóng vai trò làm Invoker, nó chỉ cầm đối tượng `ToolCommand` và gọi hàm `execute()` mà không hề biết bên trong nó làm gì.
 
-**Nếu không có Chain of Responsibility:** Toàn bộ kiểm tra sẽ bị dồn vào một hàm lớn. Khi thêm luật an toàn mới cho `bash` hoặc sandbox file, lập trình viên phải sửa logic trung tâm, dễ tạo lỗi bảo mật hoặc bỏ sót bước validate.
+**c. Kết quả đạt được:**
+Mọi hành động đều được **đóng gói thành một đối tượng độc lập**. Runner hoàn toàn tách biệt khỏi logic của tool. Khi cần viết thêm một công cụ mới (Ví dụ: `SearchWebTool`), người lập trình chỉ cần tạo lớp mới kế thừa `ToolCommand`, không cần sửa lõi Runner.
+
+### **3.7. Chain of Responsibility Pattern (Chuỗi trách nhiệm)**
+
+**a. Vấn đề được giải quyết:**
+Trước khi một "Tool" do AI gọi được phép chạy (thực thi ở phần 3.6), nó bắt buộc phải vượt qua hàng rào kiểm duyệt khắt khe: (1) Tool có tồn tại không? -> (2) Tool có được cấp quyền không? -> (3) Tham số truyền vào có chuẩn không? -> (4) Đường dẫn file có nằm trong vùng an toàn (Sandbox) không? -> (5) Lệnh Bash có mã độc (rm -rf) không?
+Nếu dồn toàn bộ vào một hàm khổng lồ, logic sẽ đan xen rối rắm, cực kỳ dễ bỏ sót lỗ hổng bảo mật.
+
+**b. Phân tích kiến trúc và Ánh xạ vai trò chi tiết:**
+
+*Vai trò 1: Handler (Bộ xử lý trừu tượng)*
+Định nghĩa giao diện cho một mắt xích trong chuỗi. Nó nhận đầu vào, xử lý, và quyết định có gọi mắt xích tiếp theo (`next()`) hay không.
+```typescript
+// File: src/tool-policy.ts
+export interface ToolPolicyHandler {
+  handle(
+    input: ToolPolicyContext, 
+    next: (input: ToolPolicyContext) => Promise<ToolResultEnvelope>
+  ): Promise<ToolResultEnvelope>;
+}
+```
+
+*Vai trò 2: Concrete Handler (Mắt xích cụ thể)*
+Mỗi class là một trạm kiểm soát (Checkpoint) chỉ chịu trách nhiệm đúng 1 việc. Ví dụ: Trạm kiểm soát rủi ro lệnh Bash.
+```typescript
+// File: src/tool-policy.ts
+class RiskPolicyHandler implements ToolPolicyHandler {
+  async handle(input: ToolPolicyContext, next: Function): Promise<ToolResultEnvelope> {
+    const args = input.args ?? {};
+    
+    // 1. Tự xử lý phần việc của mình
+    if (input.call.name === "bash" && typeof args.command === "string") {
+      denyDestructiveCommand(args.command); // Quăng lỗi nếu có "rm -rf"
+    }
+    
+    // 2. Chuyển tiếp hồ sơ cho trạm kiểm soát tiếp theo
+    return next(input);
+  }
+}
+```
+
+*Vai trò 3: Client / Chain Builder (Chuỗi liên kết)*
+Hệ thống móc nối các trạm lại với nhau thành một dây chuyền lắp ráp.
+```typescript
+// File: src/tool-policy.ts
+export class ToolPolicyPipeline {
+  constructor(
+    private readonly handlers: ToolPolicyHandler[] = [
+      new ToolLookupHandler(),        // Trạm 1: Tồn tại không?
+      new EnabledToolHandler(),       // Trạm 2: Được phép dùng không?
+      new ToolArgsHandler(),          // Trạm 3: Tham số đúng không?
+      new WorkspaceSandboxHandler(),  // Trạm 4: An toàn file không?
+      new RiskPolicyHandler(),        // Trạm 5: An toàn shell không?
+      new ToolExecutionHandler(),     // Trạm cuối: Cấp phép thực thi
+    ]
+  ) {}
+  
+  // Hàm đệ quy gọi chuỗi
+  async execute(request) { /* ... invokes handlers sequentially ... */ }
+}
+```
+
+**c. Kết quả đạt được:**
+Mỗi luật lệ an ninh (Security Policy) là một Module hoàn toàn độc lập, thỏa mãn tuyệt đối nguyên lý **Single Responsibility**. Bạn có thể dễ dàng chèn thêm một mắt xích kiểm tra mới (Ví dụ: `RateLimitHandler`) vào giữa chuỗi mà không sợ làm sập hệ thống cũ.
 
 ```mermaid
 flowchart LR
@@ -1233,37 +1462,163 @@ flowchart LR
     G --> H["ToolResultEnvelope"]
 ```
 
-### **3.8. Memento - lưu và khôi phục session**
+### **3.8. Memento Pattern (Mẫu thiết kế Ghi nhớ)**
 
-**Áp dụng cụ thể:** `SessionStore.save` lưu trạng thái hội thoại, metadata và message vào SQLite. `SessionStore.load` và `loadLatest` khôi phục session để chạy tiếp. Runner không cần biết cấu trúc bảng SQLite, chỉ làm việc với đối tượng session đã được khôi phục.
+**a. Vấn đề được giải quyết:**
+Làm sao để người dùng có thể tắt ứng dụng (tắt CLI) hôm nay, nhưng ngày mai mở lên vẫn có thể gõ `--continue` để máy tính nhớ lại toàn bộ đoạn chat ngày hôm qua? Nếu Runner tự lưu từng dòng dữ liệu vào SQLite, nó sẽ phải phụ thuộc vào thư viện Database, phá vỡ nguyên lý thiết kế.
 
-**Vấn đề được giải quyết:** CLI cần tiếp tục hội thoại sau khi process kết thúc. Memento giúp lưu snapshot trạng thái cần thiết mà không phơi bày chi tiết lưu trữ cho các module khác.
+**b. Phân tích kiến trúc và Ánh xạ vai trò chi tiết:**
 
-**Nếu không có Memento:** Trạng thái hội thoại chỉ tồn tại trong RAM. Người dùng không thể dùng `--continue` hoặc `--session`, và việc phục hồi sau lỗi hoặc so sánh các nhánh session sẽ khó thực hiện.
+*Vai trò 1: Memento (Vật ghi nhớ)*
+Đóng gói toàn bộ trạng thái cần thiết của cuộc trò chuyện (Lịch sử chat, metadata, tên model) thành một đối tượng thuần túy.
+```typescript
+// File: src/contracts.ts
+export interface Session {
+  version: number;
+  id: string;
+  agent: string;
+  messages: ModelMessage[]; // Toàn bộ lịch sử trò chuyện
+  metadata: Record<string, unknown>;
+}
+```
 
-### **3.9. Prototype - fork session và clone cấu hình**
+*Vai trò 2: Originator (Người tạo ra Memento)*
+Chính là luồng chạy chính (Runner/AgentHarness). Nó tự động sinh ra/thay đổi trạng thái `Session` khi chat với AI, sau đó trao nó cho người giữ cửa.
 
-**Áp dụng cụ thể:** Khi người dùng dùng `--fork`, hệ thống clone message và metadata từ session gốc để tạo session mới có `parentSessionId`. Agent config mở rộng cũng có thể được clone từ preset gốc trước khi override.
+*Vai trò 3: Caretaker (Người giữ cửa/Người bảo quản)*
+Là `SessionStore`. Kẻ duy nhất biết cách tương tác với SQLite để cất giữ (Save) hoặc khôi phục (Load) trạng thái.
+```typescript
+// File: src/session.ts
+export class SessionStore {
+  // Cất giữ Memento vào cơ sở dữ liệu
+  async save(session: Session, options: SaveOptions): Promise<void> {
+    this.withDatabase((db) => {
+      // Logic lưu transaction vào SQLite
+      db.prepare(`INSERT INTO sessions...`).run(sessionToRow(session));
+    });
+  }
 
-**Vấn đề được giải quyết:** Người dùng cần thử hướng xử lý khác mà không làm thay đổi lịch sử session cũ. Prototype giúp tạo bản sao độc lập từ đối tượng hiện có thay vì dựng lại toàn bộ từ đầu.
+  // Khôi phục Memento từ cơ sở dữ liệu
+  async loadLatest(): Promise<Session> {
+    // Trả về Session nguyên vẹn cho Originator chạy tiếp
+    return this.load(sessionId);
+  }
+}
+```
 
-**Nếu không có Prototype:** Fork session có thể bị triển khai bằng cách dùng chung tham chiếu dữ liệu với session gốc. Khi session mới thay đổi, session cũ có nguy cơ bị ảnh hưởng hoặc mất tính toàn vẹn lịch sử.
+**c. Kết quả đạt được:**
+Đảm bảo tính Đóng gói (Encapsulation) tuyệt đối. Lõi hệ thống có thể lưu hoặc khôi phục toàn bộ tiến trình hội thoại phức tạp mà không cần phơi bày bất cứ chi tiết nào về cơ sở dữ liệu SQL bên dưới.
 
-### **3.10. Strategy - chọn hành vi session**
+### **3.9. Prototype Pattern (Mẫu thiết kế Nguyên mẫu)**
 
-**Áp dụng cụ thể:** `SessionSelectionStrategy` tách các cách chọn session thành các chiến lược riêng: tạo session mới, tiếp tục latest session, load session theo id và fork session. Preflight chọn strategy phù hợp dựa trên flag CLI.
+**a. Vấn đề được giải quyết:**
+Khi người dùng muốn phân nhánh một cuộc hội thoại (dùng cờ `--fork`), hệ thống cần tạo ra một phiên làm việc mới y hệt phiên cũ (clone) nhưng có ID khác và không được làm bẩn dữ liệu của phiên cũ. Nếu lập trình viên dùng lệnh khởi tạo `new` và copy từng tham số (như `session.agent = old.agent; session.model = old.model...`), code sẽ rất thô sơ và dễ quên thuộc tính nếu class được mở rộng.
 
-**Vấn đề được giải quyết:** Các flag `--continue`, `--session` và `--fork` tạo ra nhiều hành vi khác nhau. Strategy giúp mỗi hành vi có logic riêng nhưng vẫn dùng chung giao diện chọn session.
+**b. Phân tích kiến trúc và Ánh xạ vai trò chi tiết:**
 
-**Nếu không có Strategy:** Preflight sẽ chứa nhiều nhánh điều kiện phức tạp. Khi thêm chế độ mới như resume theo workspace hoặc restore từ checkpoint, logic điều kiện sẽ ngày càng khó đọc và khó kiểm thử.
+*Vai trò 1: Prototype (Nguyên mẫu)*
+Mọi đối tượng `Session` đang chạy trên bộ nhớ chính là bản gốc (Prototype) có khả năng được sao chép.
+
+*Vai trò 2: Client (Người yêu cầu nhân bản)*
+Lớp `SessionStore` (hoặc `ForkingSessionSelectionStrategy`) đóng vai trò nhận lệnh và thực hiện thuật toán nhân bản sâu (Deep Clone).
+```typescript
+// File: src/session.ts
+export class SessionStore {
+  // Hàm tạo ra một bản sao hoàn chỉnh từ bản gốc (source)
+  fork(source: Session): Session {
+    const now = new Date().toISOString();
+    return {
+      version: 1,
+      id: `sess_${randomUUID()}`,     // Sinh ID mới
+      parentSessionId: source.id,     // Lưu vết lịch sử nhánh
+      agent: source.agent,
+      provider: source.provider,
+      model: source.model,
+      createdAt: now,
+      updatedAt: now,
+      // Nhân bản sâu (Deep Clone) các mảng và object phức tạp
+      messages: structuredClone(source.messages) as ModelMessage[],
+      metadata: structuredClone(source.metadata) as Record<string, unknown>,
+    };
+  }
+}
+```
+
+**c. Kết quả đạt được:**
+Cho phép tạo đối tượng mới rẻ và chính xác hơn dựa trên khuôn mẫu có sẵn. Người dùng thoải mái rẽ nhánh hội thoại (`--fork`) để thử các lệnh khác nhau mà không làm hỏng file lưu trữ gốc.
+
+### **3.10. Strategy Pattern (Mẫu thiết kế Chiến lược)**
+
+**a. Vấn đề được giải quyết:**
+Người dùng khi gõ dòng lệnh có thể dùng rất nhiều cấu hình để tải Session:
+- Mặc định: Tạo Session mới.
+- `--continue`: Load phiên mới nhất.
+- `--session <id>`: Load phiên cụ thể.
+- Kèm `--fork`: Load xong rồi nhân bản nó ra.
+Nếu dùng câu lệnh `if-else` lồng nhau để xử lý, khối lượng mã nguồn sẽ cực kỳ khổng lồ, logic rẽ nhánh chằng chịt, vi phạm OCP (nếu tương lai cần làm `--resume-workspace`).
+
+**b. Phân tích kiến trúc và Ánh xạ vai trò chi tiết:**
+
+*Vai trò 1: Strategy (Chiến lược chung)*
+Định nghĩa một cái phễu bắt buộc tất cả mọi loại hình khởi tạo phải tuân theo hàm `select()`.
+```typescript
+// File: src/session-selection.ts
+export interface SessionSelectionStrategy {
+  readonly name: string;
+  select(input: SessionSelectionInput): Promise<SessionSelectionResult>;
+}
+```
+
+*Vai trò 2: Concrete Strategy (Chiến lược cụ thể)*
+Mỗi chiến lược là một lớp riêng biệt, tự lo việc của nó.
+```typescript
+// File: src/session-selection.ts
+// Chiến lược 1: Xử lý cờ --continue
+export class ContinueLatestSessionStrategy implements SessionSelectionStrategy {
+  async select(input: SessionSelectionInput): Promise<SessionSelectionResult> {
+    const session = await input.sessionStore.loadLatest();
+    return { session, agentName: session.agent, updateLatest: true };
+  }
+}
+
+// Chiến lược 2: Xử lý cờ --session <id>
+export class LoadByIdSessionStrategy implements SessionSelectionStrategy {
+  constructor(private readonly sessionId: string) {}
+  async select(input: SessionSelectionInput): Promise<SessionSelectionResult> {
+    const session = await input.sessionStore.load(this.sessionId);
+    return { session, agentName: session.agent, updateLatest: true };
+  }
+}
+```
+
+*Vai trò 3: Context (Ngữ cảnh / Người chọn chiến lược)*
+Lớp `SessionSelectionStrategyResolver` làm nhiệm vụ đọc lệnh CLI và "rút" ra chiến lược phù hợp nhất trao cho hệ thống.
+```typescript
+// File: src/session-selection.ts
+export class SessionSelectionStrategyResolver {
+  resolve(request: RunRequest): SessionSelectionStrategy {
+    let strategy: SessionSelectionStrategy;
+    
+    if (request.continueLast === true) strategy = new ContinueLatestSessionStrategy();
+    else if (request.sessionId !== undefined) strategy = new LoadByIdSessionStrategy(request.sessionId);
+    else strategy = new NewSessionSelectionStrategy();
+    
+    // Đặc biệt: Pattern Decorator/Strategy kết hợp để bọc Fork ra bên ngoài
+    return request.fork === true ? new ForkingSessionSelectionStrategy(strategy) : strategy;
+  }
+}
+```
+
+**c. Kết quả đạt được:**
+Thuật toán lựa chọn phiên chạy được tách biệt hoàn toàn. Việc mở rộng vô cùng dễ dàng, các lớp chiến lược độc lập nhau nên có thể thoải mái viết Unit Test riêng lẻ.
 
 ```mermaid
 flowchart TD
     Flags["CLI flags"] --> Decision{"Chọn strategy"}
-    Decision -->|không có continue/session| New["NewSessionStrategy"]
+    Decision -->|không có flag| New["NewSessionStrategy"]
     Decision -->|--continue| Latest["ContinueLatestStrategy"]
     Decision -->|--session id| ById["LoadSessionByIdStrategy"]
-    Decision -->|--fork| Fork["ForkSessionStrategy"]
+    Decision -->|--fork| Fork["ForkingSessionSelectionStrategy"]
     New --> Session["Prepared session"]
     Latest --> Session
     ById --> Session
