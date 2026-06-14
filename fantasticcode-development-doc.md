@@ -1027,21 +1027,184 @@ stateDiagram-v2
     failed --> [*]
 ```
 
-### **3.4. Adapter - provider và agent config adapter**
+### **3.4. Adapter Pattern (Mẫu thiết kế chuyển đổi)**
 
-**Áp dụng cụ thể:** `OpenAIProviderAdapter` và `AnthropicProviderAdapter` chuyển đổi SDK/API riêng của từng provider về cùng giao diện nội bộ `ModelClient`. `AgentConfigAdapter` chuyển cấu hình agent từ file cấu hình sang dạng runtime mà runner sử dụng được.
+**a. Vấn đề được giải quyết:**
+Hệ thống cần giao tiếp với hai nguồn dữ liệu hoàn toàn khác biệt so với chuẩn nội bộ:
+1. Thư viện kết nối API (SDK) của các hãng AI (OpenAI, Anthropic). Mỗi hãng có cấu trúc hàm, kiểu tham số, và cách trả về kết quả khác nhau.
+2. Cấu hình Agent thô rải rác (file JSON chứa metadata và file Markdown chứa prompt).
+Nếu không sử dụng mẫu thiết kế này, lõi chương trình (Runner) sẽ phải chứa hàng loạt câu lệnh `if/else` để rẽ nhánh xử lý cho từng loại dữ liệu, khiến hệ thống cực kỳ khó mở rộng, vi phạm nghiêm trọng nguyên lý thiết kế và không thể bảo trì.
 
-**Vấn đề được giải quyết:** OpenAI, Anthropic và OpenRouter có cách cấu hình, gọi API và trả response khác nhau. Adapter giúp runner chỉ làm việc với một hợp đồng chung, không cần biết provider thật phía sau là gì.
+**b. Phân tích kiến trúc và Ánh xạ vai trò chi tiết:**
 
-**Nếu không có Adapter:** Runner sẽ phải chứa nhiều nhánh `if/else` theo từng provider. Khi thêm provider mới, logic gọi model và xử lý response sẽ bị rải trong runner, làm hệ thống khó mở rộng và khó kiểm thử.
+#### Trường hợp 1: Chuyển đổi SDK của các Provider AI (OpenAI, Anthropic)
 
-### **3.5. Factory Method - `ProviderFactory` và `ProviderFactoryRegistry`**
+*Vai trò 1: Target (Giao diện đích)*
+Đây là chuẩn chung mà lõi hệ thống dự án định nghĩa. Lõi dự án chỉ biết gọi hàm `complete` có trong interface này.
+```typescript
+// File: src/contracts.ts
+export interface ModelClient {
+  complete(request: ModelRequest): Promise<ModelResponse>;
+}
+```
 
-**Áp dụng cụ thể:** `ProviderFactoryRegistry` chọn đúng factory dựa trên provider đã resolve từ chuỗi `provider/model`. Mỗi `ProviderFactory` chịu trách nhiệm tạo adapter tương ứng, ví dụ OpenAI adapter hoặc Anthropic adapter.
+*Vai trò 2: Adaptee (Kẻ bị chuyển đổi)*
+Đây là thư viện (SDK) do hãng OpenAI viết. Nó có cấu trúc hàm (`create`) và kiểu dữ liệu tham số hoàn toàn khác với `ModelClient`.
+```typescript
+// File: src/provider.ts
+import OpenAI from "openai";
 
-**Vấn đề được giải quyết:** Việc tạo provider client cần phụ thuộc vào provider name, API key, base URL, model và capability. Factory Method gom logic khởi tạo này vào đúng nơi, thay vì để runner hoặc preflight tự new từng adapter.
+interface OpenAIClientLike {
+  chat: {
+    completions: {
+      create(params: ChatCompletionCreateParamsNonStreaming): Promise<ChatCompletion>;
+    };
+  };
+}
+```
 
-**Nếu không có Factory Method:** Mỗi nơi cần model client có thể tự tạo adapter theo cách khác nhau. Điều này dễ làm sai cấu hình, khó thay đổi provider, và khiến logic khởi tạo bị lặp lại trong nhiều module.
+*Vai trò 3: Adapter (Người chuyển đổi)*
+Lớp đứng giữa thực thi Target và bọc lấy Adaptee để phiên dịch yêu cầu.
+```typescript
+// File: src/provider.ts
+export class OpenAIProviderAdapter implements ModelClient {
+  private readonly client: OpenAIClientLike; // Adaptee
+
+  constructor(config: ProviderAdapterConfig, client?: OpenAIClientLike) {
+    this.client = client ?? new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL });
+  }
+
+  async complete(request: ModelRequest): Promise<ModelResponse> {
+    // 1. Chuyển đổi Request (Input) sang chuẩn của OpenAI
+    const completion = await this.client.chat.completions.create({
+      model: request.model,
+      messages: request.messages.map(toOpenAIMessage), 
+      tools: request.tools.map(toOpenAITool),          
+      stream: false,
+    });
+    
+    // 2. Chuyển đổi Response (Output) từ OpenAI về chuẩn của hệ thống
+    return normalizeOpenAIChatCompletion(completion);
+  }
+}
+```
+
+#### Trường hợp 2: Chuyển đổi cấu hình Agent
+
+*Vai trò 1: Target*
+Đối tượng nội bộ đã được chuẩn hóa để hệ thống chạy.
+```typescript
+// File: src/contracts.ts
+export interface AgentPreset {
+  name: string;
+  description?: string;
+  systemPrompt: string; // Chuỗi nội dung hoàn chỉnh
+  enabledTools: string[];
+  model?: string;
+}
+```
+
+*Vai trò 2: Adaptee*
+Cấu trúc file JSON thô, không chứa nội dung prompt mà chỉ chứa đường dẫn file ngoại vi.
+```typescript
+// File: src/agent.ts
+export interface AgentConfig {
+  description?: string;
+  extends?: string;
+  promptFile?: string; // Chỉ là đường dẫn chỉ đến file Markdown
+  enabledTools?: string[];
+  model?: string;
+}
+```
+
+*Vai trò 3: Adapter*
+```typescript
+// File: src/agent.ts
+export class AgentConfigAdapter {
+  load(configs: Record<string, AgentConfig>): AgentPreset[] {
+     return Object.keys(configs).map((name) => this.build(name, configs, building, built));
+  }
+
+  private build(...) {
+    const preset: AgentPreset = {
+      name,
+      // ...
+      // Adapter thực hiện đọc file ngoại vi và nhét vào thuộc tính của Target
+      systemPrompt: promptFile === undefined ? base?.systemPrompt ?? "" : readFileSync(this.resolvePromptPath(promptFile), "utf8").trim(),
+      enabledTools: [...enabledTools],
+    };
+    return preset;
+  }
+}
+```
+
+**c. Kết quả đạt được:**
+Mẫu thiết kế thỏa mãn **Nguyên lý Đảo ngược Phụ thuộc (Dependency Inversion)**. Lõi cấp cao không phụ thuộc vào SDK cấp thấp, cả hai giao tiếp qua Abstraction. Hệ thống giờ đây làm việc dựa trên một "Hợp đồng chung".
+
+### **3.5. Factory Method Pattern (Mẫu thiết kế Nhà máy tạo đối tượng)**
+
+**a. Vấn đề được giải quyết:**
+Việc khởi tạo các Adapter (như `OpenAIProviderAdapter`) đòi hỏi phải có logic phân giải cấu hình (Tên hãng AI, API Key, Base URL). Nếu đặt logic này ở mọi nơi cần gọi AI, nó sẽ tạo ra sự lặp lại mã nguồn (Code Smell) và rải rác lệnh `new` khắp nơi.
+
+**b. Phân tích kiến trúc và Ánh xạ vai trò chi tiết:**
+
+*Vai trò 1: Product (Sản phẩm trừu tượng)*
+Sản phẩm mà nhà máy tạo ra chính là `ModelClient` (đồng thời là Target của Adapter).
+```typescript
+// File: src/contracts.ts
+export interface ModelClient {
+  complete(request: ModelRequest): Promise<ModelResponse>;
+}
+```
+
+*Vai trò 2: Creator (Nhà máy trừu tượng)*
+Giao diện chung buộc mọi "nhà máy con" phải tuân theo.
+```typescript
+// File: src/provider.ts
+export interface ProviderFactory {
+  supports(config: ProviderConfig): boolean;         // Có thẩm quyền xử lý không?
+  create(resolved: ResolvedProvider): ModelClient;   // Sản xuất đối tượng
+}
+```
+
+*Vai trò 3: Concrete Creator (Nhà máy cụ thể)*
+Nhà máy chuyên biệt khởi tạo Adapter cho hãng OpenAI.
+```typescript
+// File: src/provider.ts
+export class OpenAIProviderFactory implements ProviderFactory {
+  supports(config: ProviderConfig): boolean {
+    return providerSdk(config) === "openai";
+  }
+
+  // Khởi tạo đối tượng bằng lệnh `new` được giấu kín ở đây
+  create(resolved: ResolvedProvider): ModelClient {
+    return new OpenAIProviderAdapter({ baseURL: resolved.config.baseURL, apiKey: resolved.apiKey });
+  }
+}
+```
+
+*Vai trò 4: Client (Hệ thống điều phối)*
+Hệ thống quản lý chung để điều phối việc gọi nhà máy mà không dùng đến các khối `if-else` lồng nhau.
+```typescript
+// File: src/provider.ts
+export class ProviderFactoryRegistry {
+  constructor(private readonly factories: ProviderFactory[] = [
+    new OpenAIProviderFactory(), 
+    new AnthropicProviderFactory()
+  ]) {}
+
+  create(resolved: ResolvedProvider): ModelClient {
+    // Tìm kiếm động nhà máy phù hợp
+    const factory = this.factories.find((candidate) => candidate.supports(resolved.config));
+    
+    // Giao cho nhà máy đó xuất xưởng sản phẩm
+    return factory.create(resolved);
+  }
+}
+```
+
+**c. Kết quả đạt được:**
+Dự án tuân thủ triệt để **Nguyên lý Đóng/Mở (Open/Closed Principle - OCP)**. Kiến trúc sẵn sàng đón nhận các yêu cầu mới. Khi muốn bổ sung mô hình AI mới (Google Gemini), lập trình viên chỉ việc tạo ra một lớp Factory mới (`GeminiProviderFactory`), cài đặt nó kế thừa Creator, và gắn vào Registry. Không có bất kỳ dòng lệnh `if/else` lõi nào bị thay đổi.
 
 ### **3.6. Command - các agentic tool**
 
